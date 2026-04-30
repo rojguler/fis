@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "526611601642",
+    "project_id": "foof-information-system",
+    "storage_bucket": "foof-information-system.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:526611601642:android:47c08d17a48948c12a5f93",
+        "android_client_info": {
+          "package_name": "com.example.ikas_fis"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmkNHP--i5CEcNsMtZKR7fnToT50HHKvo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
