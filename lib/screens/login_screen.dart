@@ -299,6 +299,73 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                       const SizedBox(height: 20),
 
+                      // OR Divider
+                      Row(
+                        children: [
+                          Expanded(child: Divider(color: IKASColors.border)),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              lang.isTurkish ? "VEYA" : "OR",
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: IKASColors.textLight,
+                              ),
+                            ),
+                          ),
+                          Expanded(child: Divider(color: IKASColors.border)),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Google Sign in button
+                      SizedBox(
+                        height: 52,
+                        child: OutlinedButton.icon(
+                          onPressed: _isLoading ? null : () async {
+                            setState(() => _isLoading = true);
+                            final authService = Provider.of<AuthService>(context, listen: false);
+                            final error = await authService.signInWithGoogle();
+                            setState(() => _isLoading = false);
+                            if (!mounted) return;
+
+                            if (error != null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(error, style: GoogleFonts.poppins()),
+                                  backgroundColor: Colors.redAccent,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              );
+                            } else {
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(builder: (_) => const MainNavScreen()),
+                              );
+                            }
+                          },
+                          icon: Image.network(
+                            'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/120px-Google_%22G%22_logo.svg.png',
+                            height: 24,
+                          ),
+                          label: Text(
+                            lang.isTurkish ? "Google ile Giriş Yap" : "Sign in with Google",
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: IKASColors.textDark,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            side: const BorderSide(color: IKASColors.border, width: 1.5),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+
                       // Sign up link
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,

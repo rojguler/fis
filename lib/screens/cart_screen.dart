@@ -11,6 +11,7 @@ import 'order_screen.dart';
 import '../services/language_service.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/services.dart';
+import '../services/menu_service.dart';
 
 // Cart screen for viewing and managing shopping cart
 class CartScreen extends StatelessWidget {
@@ -71,22 +72,25 @@ class CartScreen extends StatelessWidget {
             return _buildEmptyCart(context, lang);
           }
 
-          return Column(
+          return ListView(
             children: [
               // Cart items list
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: cartService.items.length,
-                  itemBuilder: (context, index) {
-                    final item = cartService.items[index];
-                    return _buildCartItem(context, item, cartService, lang)
-                      .animate(delay: (50 * index).ms)
-                      .fade(duration: 300.ms)
-                      .slideX(begin: 0.1, duration: 300.ms, curve: Curves.easeOut);
-                  },
-                ),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                itemCount: cartService.items.length,
+                itemBuilder: (context, index) {
+                  final item = cartService.items[index];
+                  return _buildCartItem(context, item, cartService, lang)
+                    .animate(delay: (50 * index).ms)
+                    .fade(duration: 300.ms)
+                    .slideX(begin: 0.1, duration: 300.ms, curve: Curves.easeOut);
+                },
               ),
+
+              // Cross sell area
+              _buildCrossSellSection(context, lang),
 
               // Total and checkout button
               _buildCheckoutSection(context, cartService, lang),
@@ -440,49 +444,158 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  // Build checkout section with modern design
+  Widget _buildCrossSellSection(BuildContext context, LanguageService lang) {
+    return Consumer<MenuService>(
+      builder: (context, menuService, _) {
+        final cartService = Provider.of<CartService>(context, listen: false);
+        final cartItemIds = cartService.items.map((i) => i.meal.id).toList();
+        
+        // Find meals not in cart
+        final suggestions = menuService.meals.where((m) => 
+          !cartItemIds.contains(m.id) && (m.category == 'drink' || m.category == 'dessert')
+        ).take(3).toList();
+
+        if (suggestions.isEmpty) return const SizedBox.shrink();
+
+        return Container(
+          height: 110,
+          margin: const EdgeInsets.only(bottom: 24, top: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  lang.isTurkish ? 'Bunları da beğenebilirsiniz:' : 'You might also like:',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: suggestions.length,
+                  itemBuilder: (context, i) {
+                    final meal = suggestions[i];
+                    return GestureDetector(
+                      onTap: () {
+                         HapticFeedback.lightImpact();
+                         cartService.addItem(meal);
+                      },
+                      child: Container(
+                        width: 220,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).brightness == Brightness.dark ? IKASColors.darkCard : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+                          ],
+                          border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.1)),
+                        ),
+                        child: Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: SizedBox(
+                                width: 50, height: 50,
+                                child: meal.imageUrl.startsWith('http') 
+                                    ? Image.network(meal.imageUrl, fit: BoxFit.cover) 
+                                    : (meal.imageUrl.startsWith('data:image') 
+                                        ? Image.memory(base64Decode(meal.imageUrl.split(',')[1]), fit: BoxFit.cover)
+                                        : Image.asset(meal.imageUrl, fit: BoxFit.cover, errorBuilder: (_,__,___) => Container(color: Colors.grey))),
+                              )
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(meal.getLocalizedName(lang.isTurkish), maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 12)),
+                                  Text('+ ₺${meal.price.toStringAsFixed(2)}', style: GoogleFonts.poppins(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w800, fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), shape: BoxShape.circle),
+                              child: Icon(Icons.add_rounded, color: Theme.of(context).colorScheme.primary, size: 18),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Build checkout section with realistic receipt design
   Widget _buildCheckoutSection(BuildContext context, CartService cartService, LanguageService lang) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark ? IKASColors.darkSurface : Colors.white,
+        color: isDark ? IKASColors.darkSurface : Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.15),
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.08),
             blurRadius: 20,
             offset: const Offset(0, -4),
-            spreadRadius: 0,
           ),
         ],
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
+          topLeft: Radius.circular(32),
+          topRight: Radius.circular(32),
         ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Summary section
+          // Realistic Receipt Summary section
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
+              color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFFAFAFA),
+              borderRadius: BorderRadius.circular(4),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
+              ],
               border: Border.all(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                width: 1.5,
+                color: isDark ? Colors.white10 : Colors.grey.shade300,
+                width: 1,
               ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Receipt Header
+                Center(
+                  child: Text(
+                    'IKAS SUPER MARKET',
+                    style: GoogleFonts.vt323(
+                      fontSize: 24,
+                      letterSpacing: 2,
+                      color: isDark ? Colors.white70 : Colors.black87,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _dashedLine(isDark),
+                const SizedBox(height: 16),
+
                 // ── Nutrition Summary ──
                 Text(
                   lang.nutritionSummary,
@@ -814,6 +927,20 @@ class CartScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _dashedLine(bool isDark) {
+    return Row(
+      children: List.generate(
+        30,
+        (index) => Expanded(
+          child: Container(
+            color: index % 2 == 0 ? Colors.transparent : (isDark ? Colors.white30 : Colors.grey.shade400),
+            height: 1,
+          ),
+        ),
       ),
     );
   }

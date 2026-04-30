@@ -1678,10 +1678,20 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
         final orders = orderService.orders;
         double totalRevenue = 0;
         int totalItemsSold = 0;
+        Map<String, int> mealSales = {};
         
         for (var order in orders) {
           totalRevenue += order.totalPrice;
-          totalItemsSold += order.items.fold(0, (sum, i) => sum + i.quantity);
+          for(var item in order.items) {
+            totalItemsSold += item.quantity;
+            mealSales[item.meal.name] = (mealSales[item.meal.name] ?? 0) + item.quantity;
+          }
+        }
+
+        String mostPopularItem = "Bulunamadı";
+        if (mealSales.isNotEmpty) {
+           var sorted = mealSales.entries.toList()..sort((a,b) => b.value.compareTo(a.value));
+           mostPopularItem = sorted.first.key;
         }
 
         final predictions = orderService.stockPredictions;
@@ -1843,7 +1853,6 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                   ),
 
                 // Top Metrics Row
-                // Metrics with flexible layout
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
@@ -1851,17 +1860,22 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                     children: [
                       SizedBox(
                         width: 240,
-                        child: _metricCard('Total Revenue', '₺${totalRevenue.toStringAsFixed(2)}', Icons.attach_money_rounded, Colors.green, isDark),
+                        child: _metricCard('Bugünkü Kazanç', '₺${totalRevenue.toStringAsFixed(2)}', Icons.attach_money_rounded, Colors.green, isDark),
                       ),
                       const SizedBox(width: 16),
                       SizedBox(
                         width: 200,
-                        child: _metricCard('Total Orders', '${orders.length}', Icons.shopping_bag_rounded, Colors.blue, isDark),
+                        child: _metricCard('Toplam Sipariş', '${orders.length}', Icons.shopping_bag_rounded, Colors.blue, isDark),
+                      ),
+                      const SizedBox(width: 16),
+                      SizedBox(
+                        width: 220,
+                        child: _metricCard('En Popüler Ürün', mostPopularItem, Icons.star_rounded, Colors.amber, isDark),
                       ),
                       const SizedBox(width: 16),
                       SizedBox(
                         width: 200,
-                        child: _metricCard('Items Sold', '$totalItemsSold', Icons.fastfood_rounded, Colors.orange, isDark),
+                        child: _metricCard('Satılan Ürün', '$totalItemsSold', Icons.fastfood_rounded, Colors.orange, isDark),
                       ),
                     ],
                   ),

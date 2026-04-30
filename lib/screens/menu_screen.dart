@@ -70,7 +70,9 @@ class _MenuScreenState extends State<MenuScreen> {
     if (_searchQuery.isNotEmpty) {
       filtered = filtered.where((meal) {
         return meal.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            meal.description.toLowerCase().contains(_searchQuery.toLowerCase());
+            meal.nameTr.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            meal.description.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            meal.descriptionTr.toLowerCase().contains(_searchQuery.toLowerCase());
       }).toList();
     }
 
@@ -211,14 +213,7 @@ class _MenuScreenState extends State<MenuScreen> {
                                   });
                                 },
                               )
-                            : IconButton(
-                                icon: Icon(Icons.mic_none_rounded, color: Theme.of(context).colorScheme.primary),
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(lang.voiceSearchSoon)),
-                                  );
-                                },
-                              ),
+                            : null,
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 20,

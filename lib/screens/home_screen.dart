@@ -87,7 +87,9 @@ class _HomeScreenState extends State<HomeScreen>
     if (_searchQuery.isNotEmpty) {
       filtered = filtered.where((m) {
         return m.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            m.description.toLowerCase().contains(_searchQuery.toLowerCase());
+            m.nameTr.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            m.description.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            m.descriptionTr.toLowerCase().contains(_searchQuery.toLowerCase());
       }).toList();
     }
     if (_filterVegan) {
@@ -689,7 +691,7 @@ class _HomeScreenState extends State<HomeScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(padding: const EdgeInsets.all(20), child: Text(lang.isTurkish ? 'Günün Menüsü' : 'Today Specials', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold))),
-        SizedBox(height: 100, child: ListView.builder(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 14), itemCount: meals.length, itemBuilder: (context, i) => Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Column(children: [CircleAvatar(radius: 30, backgroundColor: Colors.grey.shade200, child: ClipOval(child: SizedBox(width: 60, height: 60, child: _buildMealImage(meals[i].imageUrl, true)))), const SizedBox(height: 4), Text(meals[i].getLocalizedName(lang.isTurkish), style: const TextStyle(fontSize: 10))])))),
+        SizedBox(height: 100, child: ListView.builder(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 14), itemCount: meals.length, itemBuilder: (context, i) => GestureDetector(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MealDetailScreen(meal: meals[i]))), child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Column(children: [CircleAvatar(radius: 30, backgroundColor: Colors.grey.shade200, child: ClipOval(child: SizedBox(width: 60, height: 60, child: _buildMealImage(meals[i].imageUrl, true)))), const SizedBox(height: 4), Text(meals[i].getLocalizedName(lang.isTurkish), style: const TextStyle(fontSize: 10))]))))),
       ],
     );
   }

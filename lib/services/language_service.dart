@@ -139,7 +139,7 @@ class LanguageService extends ChangeNotifier {
   // Status Labels
   String statusLabel(OrderStatus status) {
     switch (status) {
-      case OrderStatus.pending:   return isTurkish ? 'Ödeme Bekliyor' : 'Payment Pending';
+      case OrderStatus.pending:   return isTurkish ? 'Sipariş Alındı' : 'Order Received';
       case OrderStatus.preparing: return isTurkish ? 'Hazırlanıyor' : 'Preparing';
       case OrderStatus.ready:     return isTurkish ? 'Hazır' : 'Ready';
       case OrderStatus.completed: return isTurkish ? 'Tamamlandı' : 'Completed';

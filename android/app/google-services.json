@@ -12,15 +12,40 @@
           "package_name": "com.example.ikas_fis"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "526611601642-tgk7m82os2q244t36elfc4lgsmpaoqn2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ikas_fis",
+            "certificate_hash": "b9421505667806c985f522d8d10f8826170f08f7"
+          }
+        },
+        {
+          "client_id": "526611601642-ok7lh33tqf1sekibhps4n70sivtb8fk5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyAmkNHP--i5CEcNsMtZKR7fnToT50HHKvo"
+          "current_key": "AIzaSyDsfh-2GSNUJzkNFeBPuYyov9UiDoPa50M"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "526611601642-ok7lh33tqf1sekibhps4n70sivtb8fk5.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "526611601642-lg40cshd712mi8pjolqhobimleb6p7kd.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.ikasFis"
+              }
+            }
+          ]
         }
       }
     }

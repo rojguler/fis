@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 // Authentication service for handling user login and sign up
 class AuthService extends ChangeNotifier {
@@ -228,7 +229,63 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  // Sign in with Google
+  Future<String?> signInWithGoogle() async {
+    try {
+      if (_auth.app.options.apiKey.contains('Dummy') || 
+          _auth.app.options.apiKey.contains('Replace') ||
+          _auth.app.options.apiKey.length < 20) {
+        return 'Firebase configuration error. Google Sign-In requires valid API keys.';
+      }
+
+      // V7 API: initialize first
+      await GoogleSignIn.instance.initialize(
+        clientId: '526611601642-ok7lh33tqf1sekibhps4n70sivtb8fk5.apps.googleusercontent.com',
+      );
+
+      GoogleSignInAccount? googleUser;
+      try {
+        googleUser = await GoogleSignIn.instance.authenticate();
+      } catch (e) {
+        debugPrint('Google Sign-In Cancelled or Failed: $e');
+        return null; // User canceled or error during auth
+      }
+
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+
+      // V7 API: accessToken is moved to authorizationClient, idToken is enough for Firebase
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      _user = userCredential.user;
+      
+      // If it's a new user, create their Firestore profile
+      if (userCredential.additionalUserInfo?.isNewUser ?? false) {
+        await _firestore.collection('users').doc(_user!.uid).set({
+          'email': _user!.email,
+          'name': _user!.displayName ?? 'Google User',
+          'role': 'user',
+          'isAdmin': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } else {
+        await _checkAdminStatus(); // Check if existing user is admin
+      }
+
+      notifyListeners();
+      return null; // Success
+    } catch (e) {
+      debugPrint('Google Sign-In Error: $e');
+      return 'Google girişi başarısız oldu: ${e.toString()}';
+    }
+  }
+
   Future<void> signOut() async {
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (_) {}
     await _auth.signOut();
     _user = null;
     _isTestModeLoggedIn = false;

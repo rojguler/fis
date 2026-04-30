@@ -1,5 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../main.dart';
 import 'package:provider/provider.dart';
 import '../services/language_service.dart';
@@ -82,5 +83,22 @@ class NotificationService {
 
   static Future<void> unsubscribeFromTopic(String topic) async {
     await _messaging.unsubscribeFromTopic(topic);
+  }
+
+  /// Saves the current user's FCM token to Firestore for targeted notifications
+  static Future<void> saveTokenToFirestore(String userId) async {
+    if (userId.isEmpty) return;
+    try {
+      String? token = await _messaging.getToken();
+      if (token != null) {
+        await FirebaseFirestore.instance.collection('users').doc(userId).set({
+          'fcmToken': token,
+          'lastTokenUpdate': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        debugPrint('FCM Token saved for user $userId');
+      }
+    } catch (e) {
+      debugPrint('Error saving FCM token: $e');
+    }
   }
 }

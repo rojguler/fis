@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:provider/provider.dart';
 import '../models/meal.dart';
 import '../main.dart';
@@ -678,9 +679,11 @@ class MealDetailScreen extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       height: 60,
-      child: ElevatedButton.icon(
-        onPressed: canAdd ? () {
-          HapticFeedback.mediumImpact();
+      child: _SlideToAddButton(
+        label: canAdd ? (lang.isTurkish ? 'Kaydırarak Sepete Ekle' : 'Slide to Add') : lang.outOfStock,
+        color: canAdd ? IKASColors.primary : Colors.grey,
+        onSlideCompleted: canAdd ? () {
+          HapticFeedback.heavyImpact();
           cartService.addItem(meal);
           ToastUtils.showTopToast(
             context, 
@@ -688,16 +691,122 @@ class MealDetailScreen extends StatelessWidget {
             actionLabel: lang.isTurkish ? 'Sepete Git' : 'Go to Cart',
             onAction: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen())),
           );
-        } : null,
-        icon: Icon(canAdd ? Icons.add_shopping_cart_rounded : Icons.remove_shopping_cart_rounded),
-        label: Text(canAdd ? (lang.isTurkish ? 'Sepete Ekle' : 'Add to Cart') : lang.outOfStock, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w800)),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: IKASColors.primary,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          elevation: 0,
-        ),
+        } : () {},
       ),
+    );
+  }
+}
+
+class _SlideToAddButton extends StatefulWidget {
+  final VoidCallback onSlideCompleted;
+  final String label;
+  final Color color;
+
+  const _SlideToAddButton({
+    required this.onSlideCompleted,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  _SlideToAddButtonState createState() => _SlideToAddButtonState();
+}
+
+class _SlideToAddButtonState extends State<_SlideToAddButton> {
+  double _dragPosition = 0.0;
+  bool _isCompleted = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double width = constraints.maxWidth;
+        final double height = 60;
+        final double threshold = width * 0.7;
+
+        return Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: widget.color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: widget.color.withOpacity(0.3)),
+          ),
+          child: Stack(
+            children: [
+              Center(
+                child: Shimmer.fromColors(
+                  baseColor: widget.color,
+                  highlightColor: Colors.white,
+                  child: Text(
+                    widget.label,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+              AnimatedPositioned(
+                duration: _isCompleted || _dragPosition == 0 ? const Duration(milliseconds: 300) : Duration.zero,
+                curve: Curves.easeOutBack,
+                left: _dragPosition,
+                child: GestureDetector(
+                  onHorizontalDragUpdate: (details) {
+                    if (_isCompleted) return;
+                    setState(() {
+                      _dragPosition += details.delta.dx;
+                      if (_dragPosition < 0) _dragPosition = 0;
+                      if (_dragPosition > width - height) {
+                         _dragPosition = width - height;
+                      }
+                    });
+                  },
+                  onHorizontalDragEnd: (details) {
+                    if (_isCompleted) return;
+                    if (_dragPosition > threshold) {
+                      setState(() {
+                        _dragPosition = width - height;
+                        _isCompleted = true;
+                      });
+                      widget.onSlideCompleted();
+                      // Reset after a delay
+                      Future.delayed(const Duration(seconds: 1), () {
+                        if (mounted) {
+                          setState(() {
+                            _dragPosition = 0;
+                            _isCompleted = false;
+                          });
+                        }
+                      });
+                    } else {
+                      setState(() {
+                        _dragPosition = 0;
+                      });
+                    }
+                  },
+                  child: Container(
+                    width: height,
+                    height: height,
+                    decoration: BoxDecoration(
+                      color: widget.color,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                         BoxShadow(color: widget.color.withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 3)),
+                      ]
+                    ),
+                    child: Icon(
+                      _isCompleted ? Icons.check_rounded : Icons.keyboard_double_arrow_right_rounded,
+                      color: Colors.white,
+                      size: 26,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

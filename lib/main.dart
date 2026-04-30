@@ -336,11 +336,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
         if (isAuth && isAdmin) {
           // Admin: listen to ALL orders in real-time
           orderService.listenToAllOrders();
+          NotificationService.saveTokenToFirestore(authService.currentUserId);
         } else if (isAuth && !isAdmin) {
           // Regular user: listen to their own orders
           final uid = authService.currentUserId;
           if (uid.isNotEmpty) {
             orderService.listenToUserOrders(uid);
+            NotificationService.saveTokenToFirestore(uid);
           }
         } else {
           // Logged out: stop all listeners and clear data

@@ -33,71 +33,97 @@ class _OrderScreenState extends State<OrderScreen> {
   @override
   Widget build(BuildContext context) {
     final lang = Provider.of<LanguageService>(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.receipt_long, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              lang.createOrder,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
+    return Consumer<CartService>(
+      builder: (context, cartService, child) {
+        if (cartService.isEmpty) {
+          return Scaffold(
+            appBar: AppBar(
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
+                    child: const Icon(Icons.receipt_long, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(lang.createOrder, style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
-      body: Consumer<CartService>(
-        builder: (context, cartService, child) {
-          if (cartService.isEmpty) {
-            return _buildEmptyCart(context, lang);
-          }
+            body: _buildEmptyCart(context, lang),
+          );
+        }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+        return Scaffold(
+          appBar: AppBar(
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
+                  child: const Icon(Icons.receipt_long, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Text(lang.createOrder, style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+              ],
+            ),
+          ),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Order summary
-                _buildOrderSummary(context, cartService, lang),
+                // Timeline / Stepper Header
+                _buildTimelineHeader(context, lang),
+                const SizedBox(height: 24),
+
+                // Order items compact list
+                _buildOrderItemsList(context, cartService, lang),
                 const SizedBox(height: 24),
 
                 // Notes section
                 _buildNotesSection(lang),
                 const SizedBox(height: 24),
 
-                // Order items list
-                _buildOrderItemsList(context, cartService, lang),
-                const SizedBox(height: 24),
-
                 // Coupon section
                 _buildCouponSection(lang),
-                const SizedBox(height: 24),
-
-                // Total section
-                _buildTotalSection(context, cartService, lang),
-                const SizedBox(height: 24),
-
-                // Create order button
-                _buildCreateOrderButton(context, cartService, lang),
-                const SizedBox(height: 16),
-
-                // Info text
-                _buildInfoText(lang),
+                const SizedBox(height: 32),
               ],
             ),
-          );
-        },
-      ),
+          ),
+          bottomNavigationBar: Container(
+            padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.white,
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, -5)),
+              ],
+              borderRadius: const BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildTotalSection(context, cartService, lang),
+                const SizedBox(height: 16),
+                _buildCreateOrderButton(context, cartService, lang),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTimelineHeader(BuildContext context, LanguageService lang) {
+    return Row(
+      children: [
+        Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.primary, size: 28),
+        Expanded(child: Container(height: 2, color: Theme.of(context).colorScheme.primary.withOpacity(0.3))),
+        Icon(Icons.radio_button_checked_rounded, color: Theme.of(context).colorScheme.primary, size: 28),
+        Expanded(child: Container(height: 2, color: Colors.grey.withOpacity(0.3))),
+        Icon(Icons.flag_rounded, color: Colors.grey, size: 28),
+      ],
     );
   }
 
@@ -146,136 +172,7 @@ class _OrderScreenState extends State<OrderScreen> {
     );
   }
 
-  // Build order summary card with modern design
-  Widget _buildOrderSummary(BuildContext context, CartService cartService, LanguageService lang) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFFFF8E1),
-            const Color(0xFFFFF8E1).withOpacity(0.8),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.15),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.receipt_long,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                lang.isTurkish ? 'Sipariş Özeti' : 'Order Summary',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.7),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.shopping_bag_outlined,
-                          size: 18,
-                          color: Colors.grey[700],
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${lang.isTurkish ? 'Toplam Ürün' : 'Total Items'}:',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.grey[700],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      '${cartService.itemCount} ${lang.items.toLowerCase()}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-                const Divider(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.attach_money,
-                          size: 18,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${lang.isTurkish ? 'Toplam Tutar' : 'Total Amount'}:',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.grey[700],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      '₺${cartService.totalPrice.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Cleaned unused method
 
   Widget _buildNotesSection(LanguageService lang) {
     return Column(
@@ -536,85 +433,47 @@ class _OrderScreenState extends State<OrderScreen> {
     );
   }
 
-  // Build total section with modern design
+  // Build total section for bottom navigation bar
   Widget _buildTotalSection(BuildContext context, CartService cartService, LanguageService lang) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.primary.withOpacity(0.15),
-            Theme.of(context).colorScheme.primary.withOpacity(0.08),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.payments_outlined,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                '${lang.total}:',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (_appliedCoupon != null)
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              lang.total,
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
                 Text(
-                  '₺${cartService.totalPrice.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    decoration: TextDecoration.lineThrough,
-                    color: Colors.grey,
+                  '₺${_getFinalPrice(cartService).toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
-              Text(
-                '₺${_getFinalPrice(cartService).toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+                if (_appliedCoupon != null) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '₺${cartService.totalPrice.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      decoration: TextDecoration.lineThrough,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -633,59 +492,50 @@ class _OrderScreenState extends State<OrderScreen> {
   // Build create order button with modern design
   Widget _buildCreateOrderButton(BuildContext context, CartService cartService, LanguageService lang) {
     return Container(
+      width: double.infinity,
+      height: 60,
       decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: _isCreatingOrder || cartService.hasUnavailableItems 
+             ? [Colors.grey.shade400, Colors.grey.shade500] 
+             : [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.primary.withOpacity(0.8)],
+        ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(
-            color: (_isCreatingOrder || cartService.hasUnavailableItems
-                    ? Colors.grey
-                    : Theme.of(context).colorScheme.primary)
-                .withOpacity(0.4),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-            spreadRadius: 0,
-          ),
+          if (!_isCreatingOrder && !cartService.hasUnavailableItems)
+            BoxShadow(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
         ],
       ),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: _isCreatingOrder || cartService.hasUnavailableItems
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: _isCreatingOrder || cartService.hasUnavailableItems
               ? null
               : () => _createOrder(context, cartService, lang),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            foregroundColor: Colors.white,
-            elevation: 0,
-          ),
-          child: _isCreatingOrder
-              ? const SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.check_circle_outline, size: 24),
-                    const SizedBox(width: 12),
-                    Text(
-                      lang.createOrder,
-                      style: const TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
+          child: Center(
+            child: _isCreatingOrder
+                ? const SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.shopping_bag_outlined, color: Colors.white, size: 24),
+                      const SizedBox(width: 12),
+                      Text(
+                        lang.isTurkish ? 'Siparişi Onayla' : 'Confirm Order',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+          ),
         ),
       ),
     );
