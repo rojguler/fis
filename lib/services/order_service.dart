@@ -6,6 +6,7 @@ import '../models/order.dart' as models;
 import '../models/cart_item.dart';
 import '../models/meal.dart';
 import '../services/menu_service.dart';
+import '../services/email_service.dart';
 import '../main.dart'; // To access globalMessengerKey and IKASColors
 import 'package:provider/provider.dart';
 import '../services/language_service.dart';
@@ -429,6 +430,32 @@ class OrderService extends ChangeNotifier {
       await _firestore.collection('orders').doc(orderId).update({
         'status': status.toString().split('.').last,
       });
+
+      // Siparişin sahibine e-posta gönder (asenkron olarak)
+      try {
+        final userDoc = await _firestore.collection('users').doc(order.userId).get();
+        if (userDoc.exists && userDoc.data()!.containsKey('email')) {
+          final userEmail = userDoc.data()!['email'] as String;
+          if (userEmail.isNotEmpty) {
+            
+            // Basitçe durumu Türkçeye çevir
+            String statusT = status.toString().split('.').last;
+            if (status == models.OrderStatus.preparing) statusT = "Hazırlanıyor 👨‍🍳";
+            else if (status == models.OrderStatus.ready) statusT = "Hazır! Afiyet Olsun 🍽️";
+            else if (status == models.OrderStatus.completed) statusT = "Tamamlandı ✅";
+            else if (status == models.OrderStatus.cancelled) statusT = "İptal Edildi ❌";
+
+            EmailService.sendOrderStatusEmail(
+              userEmail: userEmail,
+              orderId: order.id,
+              newStatus: status.toString(),
+              statusText: statusT,
+            ).catchError((e) => debugPrint('Sipariş mail hatası: \$e'));
+          }
+        }
+      } catch (e) {
+        debugPrint('Kullanıcı maili çekilirken hata: \$e');
+      }
 
       // Restore stock if admin cancels
       if (status == models.OrderStatus.cancelled &&

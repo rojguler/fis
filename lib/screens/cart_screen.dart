@@ -4,8 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../main.dart';
 import '../services/cart_service.dart';
-import '../services/order_service.dart';
-import '../services/auth_service.dart';
 import '../models/cart_item.dart';
 import 'order_screen.dart';
 import '../services/language_service.dart';

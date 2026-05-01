@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../main.dart';
-import '../services/auth_service.dart';
 import '../services/cart_service.dart';
 import '../services/language_service.dart';
 import 'home_screen.dart';
@@ -64,7 +63,7 @@ class _MainNavScreenState extends State<MainNavScreen>
 
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
         final navigator = _navigatorKeys[_currentIndex].currentState;
         if (navigator != null && navigator.canPop()) {

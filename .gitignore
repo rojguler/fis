@@ -48,3 +48,6 @@ app.*.map.json
 # **/GoogleService-Info.plist
 # firebase_options.dart
 
+# Sensitive environment variables - DO NOT COMMIT
+.env
+functions/.env

@@ -160,16 +160,24 @@ class AuthService extends ChangeNotifier {
             }, SetOptions(merge: true));
           }
           
+          // Send verification email
+          await _user!.sendEmailVerification();
+          debugPrint('Verification email sent to $email');
+          
           // Update admin status
           _isAdmin = isAdmin;
-          notifyListeners();
         } catch (e) {
           debugPrint('Error saving user data to Firestore: $e');
           // Continue even if Firestore save fails
         }
       }
       
-      return null; // Success
+      // E-posta doğrulama gönder ve çıkış yap
+      await _auth.signOut();
+      _user = null;
+      _isAdmin = false;
+      
+      return 'Kayıt başarılı! Lütfen giriş yapmadan önce e-posta adresinize gelen onay linkine tıklayın.'; 
     } on FirebaseAuthException catch (e) {
       debugPrint('Firebase Auth Error: ${e.code} - ${e.message}');
       debugPrint('Full error details: $e');
@@ -204,11 +212,19 @@ class AuthService extends ChangeNotifier {
         return null; // Consider successful in test mode
       }
 
-      await _auth.signInWithEmailAndPassword(
+      final userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-      _user = _auth.currentUser;
+
+      // Email doğrulaması yapılmış mı kontrol et
+      if (userCredential.user != null && !userCredential.user!.emailVerified) {
+        await _auth.signOut();
+        _user = null;
+        return 'Lütfen önce e-posta adresinize gönderilen onay linkine tıklayarak hesabınızı doğrulayın.';
+      }
+
+      _user = userCredential.user;
       return null; // Success
     } on FirebaseAuthException catch (e) {
       debugPrint('Firebase Auth Error: ${e.code} - ${e.message}');

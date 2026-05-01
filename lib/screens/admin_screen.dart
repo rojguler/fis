@@ -3,13 +3,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'dart:io' show File;
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import '../main.dart';
 import '../services/menu_service.dart';
-import '../services/auth_service.dart';
 import '../models/meal.dart';
 import '../services/order_service.dart';
 import 'order_management_screen.dart';
@@ -583,25 +579,6 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
           isUploading = false;
         });
         return;
-
-        final fileName = 'meal_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final storageRef = FirebaseStorage.instance.ref().child('meals/$fileName');
-
-        if (kIsWeb) {
-          // Web upload
-          final bytes = await image.readAsBytes();
-          await storageRef.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
-        } else {
-          // Mobile upload
-          await storageRef.putFile(File(image.path));
-        }
-
-        final downloadUrl = await storageRef.getDownloadURL();
-        
-        setLocalState(() {
-          imageUrlController.text = downloadUrl;
-          isUploading = false;
-        });
       } catch (e) {
         setLocalState(() => isUploading = false);
         if (context.mounted) {
@@ -662,73 +639,49 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Basic Info Section
+                        _buildSectionTitle(context, 'Basic Information', Icons.info_outline),
                         TextField(
                           controller: nameController,
-                          decoration: InputDecoration(
-                            labelText: 'Product Name (EN) *',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            filled: true,
-                            fillColor: isDark ? IKASColors.darkCard : Colors.grey.shade50,
-                          ),
+                          decoration: _inputDecoration(context, 'Product Name (EN) *', Icons.restaurant),
                         ),
                         const SizedBox(height: 16),
                         TextField(
                           controller: nameTrController,
-                          decoration: InputDecoration(
-                            labelText: 'Product Name (TR)',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            filled: true,
-                            fillColor: isDark ? IKASColors.darkCard : Colors.grey.shade50,
-                          ),
+                          decoration: _inputDecoration(context, 'Ürün Adı (TR)', Icons.translate),
                         ),
                         const SizedBox(height: 16),
                         TextField(
                           controller: descriptionController,
                           maxLines: 2,
-                          decoration: InputDecoration(
-                            labelText: 'Description (EN) *',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            filled: true,
-                            fillColor: isDark ? IKASColors.darkCard : Colors.grey.shade50,
-                          ),
+                          decoration: _inputDecoration(context, 'Description (EN) *', Icons.description_outlined),
                         ),
                         const SizedBox(height: 16),
                         TextField(
                           controller: descTrController,
                           maxLines: 2,
-                          decoration: InputDecoration(
-                            labelText: 'Description (TR)',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            filled: true,
-                            fillColor: isDark ? IKASColors.darkCard : Colors.grey.shade50,
-                          ),
+                          decoration: _inputDecoration(context, 'Açıklama (TR)', Icons.description),
                         ),
-                        const SizedBox(height: 16),
+                        
+                        const SizedBox(height: 32),
+                        
+                        // Pricing & Stock Section
+                        _buildSectionTitle(context, 'Pricing & Inventory', Icons.inventory_2_outlined),
                         Row(
                           children: [
                             Expanded(
                               child: TextField(
                                 controller: priceController,
                                 keyboardType: TextInputType.number,
-                                decoration: InputDecoration(
-                                  labelText: 'Price (₺) *',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                  filled: true,
-                                  fillColor: isDark ? IKASColors.darkCard : Colors.grey.shade50,
-                                ),
+                                decoration: _inputDecoration(context, 'Price (₺) *', Icons.payments_outlined),
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: TextField(
-                                controller: caloriesController,
+                                controller: stockController,
                                 keyboardType: TextInputType.number,
-                                decoration: InputDecoration(
-                                  labelText: 'Calories *',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                  filled: true,
-                                  fillColor: isDark ? IKASColors.darkCard : Colors.grey.shade50,
-                                ),
+                                decoration: _inputDecoration(context, 'Stock *', Icons.inventory),
                               ),
                             ),
                           ],
@@ -738,26 +691,16 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                           children: [
                             Expanded(
                               child: TextField(
-                                controller: stockController,
+                                controller: caloriesController,
                                 keyboardType: TextInputType.number,
-                                decoration: InputDecoration(
-                                  labelText: 'Stock *',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                  filled: true,
-                                  fillColor: isDark ? IKASColors.darkCard : Colors.grey.shade50,
-                                ),
+                                decoration: _inputDecoration(context, 'Calories *', Icons.local_fire_department_outlined),
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: DropdownButtonFormField<String>(
                                 value: selectedCategory,
-                                decoration: InputDecoration(
-                                  labelText: 'Category *',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                  filled: true,
-                                  fillColor: isDark ? IKASColors.darkCard : Colors.grey.shade50,
-                                ),
+                                decoration: _inputDecoration(context, 'Category *', Icons.category_outlined),
                                 items: const [
                                   DropdownMenuItem(value: 'main', child: Text('Main Course')),
                                   DropdownMenuItem(value: 'soup', child: Text('Soup')),
@@ -766,31 +709,23 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                                   DropdownMenuItem(value: 'drink', child: Text('Beverage')),
                                   DropdownMenuItem(value: 'diet', child: Text('Diet / Diyetik')),
                                 ],
-                                onChanged: (value) {
-                                  setDialogState(() {
-                                    selectedCategory = value!;
-                                  });
-                                },
+                                onChanged: (value) => setDialogState(() => selectedCategory = value!),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 24),
-                        Text('Nutritional Values (grams)', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16)),
-                        const SizedBox(height: 12),
+                        
+                        const SizedBox(height: 32),
+                        
+                        // Nutritional Section
+                        _buildSectionTitle(context, 'Nutritional Values (grams)', Icons.health_and_safety_outlined),
                         Row(
                           children: [
                             Expanded(
                               child: TextField(
                                 controller: proteinController,
                                 keyboardType: TextInputType.number,
-                                decoration: InputDecoration(
-                                  labelText: 'Protein',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                  filled: true,
-                                  fillColor: isDark ? IKASColors.darkCard : Colors.grey.shade50,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                                ),
+                                decoration: _inputDecoration(context, 'Protein', null),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -798,13 +733,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                               child: TextField(
                                 controller: carbsController,
                                 keyboardType: TextInputType.number,
-                                decoration: InputDecoration(
-                                  labelText: 'Carbs',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                  filled: true,
-                                  fillColor: isDark ? IKASColors.darkCard : Colors.grey.shade50,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                                ),
+                                decoration: _inputDecoration(context, 'Carbs', null),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -812,36 +741,21 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                               child: TextField(
                                 controller: fatController,
                                 keyboardType: TextInputType.number,
-                                decoration: InputDecoration(
-                                  labelText: 'Fat',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                  filled: true,
-                                  fillColor: isDark ? IKASColors.darkCard : Colors.grey.shade50,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                                ),
+                                decoration: _inputDecoration(context, 'Fat', null),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 24),
-                        Text('Additional Info', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16)),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                         TextField(
                           controller: allergensController,
-                          decoration: InputDecoration(
-                            labelText: 'Allergens (comma separated)',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            hintText: 'gluten, dairy, nuts',
-                            filled: true,
-                            fillColor: isDark ? IKASColors.darkCard : Colors.grey.shade50,
-                          ),
+                          decoration: _inputDecoration(context, 'Allergens (comma separated)', Icons.warning_amber_rounded),
                         ),
-                        const SizedBox(height: 16),
-                        const SizedBox(height: 24),
-                        Text('Image', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16)),
-                        const SizedBox(height: 12),
                         
-                        // Image Preview Box
+                        const SizedBox(height: 32),
+                        
+                        // Image Section
+                        _buildSectionTitle(context, 'Product Image', Icons.image_outlined),
                         Container(
                           width: double.infinity,
                           height: 180,
@@ -877,8 +791,6 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        
-                        // Image Actions
                         Row(
                           children: [
                             Expanded(
@@ -887,7 +799,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                                 icon: isUploading 
                                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                                     : const Icon(Icons.upload_file),
-                                label: Text(isUploading ? 'Uploading...' : 'Upload Image'),
+                                label: Text(isUploading ? 'Uploading...' : 'Upload'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: IKASColors.primary,
                                   foregroundColor: Colors.white,
@@ -902,7 +814,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                                   showDialog(
                                     context: context,
                                     builder: (context) => AlertDialog(
-                                      title: const Text('Select Asset'),
+                                      title: const Text('Quick Choose'),
                                       content: SizedBox(
                                         width: double.maxFinite,
                                         child: GridView.builder(
@@ -933,7 +845,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                                   );
                                 },
                                 icon: const Icon(Icons.collections_outlined),
-                                label: const Text('Quick Choose'),
+                                label: const Text('Gallery'),
                                 style: OutlinedButton.styleFrom(
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 ),
@@ -942,25 +854,12 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        
                         TextField(
                           controller: imageUrlController,
                           onChanged: (_) => setDialogState(() {}),
-                          decoration: InputDecoration(
-                            labelText: 'Or Paste Image URL',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            filled: true,
-                            fillColor: isDark ? IKASColors.darkCard : Colors.grey.shade50,
-                            prefixIcon: const Icon(Icons.link),
-                            suffixIcon: imageUrlController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear),
-                                    onPressed: () => setDialogState(() => imageUrlController.clear()),
-                                  )
-                                : null,
-                          ),
+                          decoration: _inputDecoration(context, 'Or Paste Image URL', Icons.link),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 24),
                       ],
                     ),
                   ),
@@ -1208,6 +1107,47 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
               }
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+  InputDecoration _inputDecoration(BuildContext context, String label, IconData? icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: icon != null ? Icon(icon, size: 20) : null,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: IKASColors.primary, width: 2),
+      ),
+      filled: true,
+      fillColor: isDark ? IKASColors.darkCard : Colors.grey.shade50,
+      labelStyle: GoogleFonts.poppins(fontSize: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    );
+  }
+
+  Widget _buildSectionTitle(BuildContext context, String title, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: IKASColors.primary),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : IKASColors.textDark,
+            ),
           ),
         ],
       ),
@@ -1538,21 +1478,83 @@ class _DailyMenuTabState extends State<DailyMenuTab> {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: isSelected ? IKASColors.primary : Colors.transparent),
                           ),
-                          child: CheckboxListTile(
-                            title: Text(meal.name, style: GoogleFonts.poppins(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                            subtitle: Text('₺${meal.price.toStringAsFixed(2)}'),
-                            value: isSelected,
-                            activeColor: IKASColors.primary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            onChanged: (value) {
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () {
                               setDialogState(() {
-                                if (value == true) {
-                                  selectedMeals.add(meal.id);
-                                } else {
+                                if (isSelected) {
                                   selectedMeals.remove(meal.id);
+                                } else {
+                                  selectedMeals.add(meal.id);
                                 }
                               });
                             },
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 50,
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: meal.imageUrl.isNotEmpty
+                                          ? (meal.imageUrl.startsWith('http')
+                                              ? Image.network(meal.imageUrl, fit: BoxFit.cover, errorBuilder: (_,__,___) => const Icon(Icons.restaurant))
+                                              : Image.asset(meal.imageUrl, fit: BoxFit.cover, errorBuilder: (_,__,___) => const Icon(Icons.restaurant)))
+                                          : const Icon(Icons.restaurant),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          meal.name,
+                                          style: GoogleFonts.poppins(
+                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '₺${meal.price.toStringAsFixed(2)}',
+                                          style: GoogleFonts.poppins(
+                                            color: IKASColors.primary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Checkbox(
+                                    value: isSelected,
+                                    activeColor: IKASColors.primary,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                    onChanged: (value) {
+                                      setDialogState(() {
+                                        if (value == true) {
+                                          selectedMeals.add(meal.id);
+                                        } else {
+                                          selectedMeals.remove(meal.id);
+                                        }
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         );
                       }),
@@ -1792,57 +1794,67 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                                     ],
                                   ),
                                 ),
-                                ElevatedButton(
-                                  onPressed: () async {
-                                    final TextEditingController amountController = TextEditingController(text: '50');
-                                    final result = await showDialog<int>(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        title: Text('${m.name} Stok Yenile', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-                                        content: TextField(
-                                          controller: amountController,
-                                          keyboardType: TextInputType.number,
-                                          decoration: const InputDecoration(
-                                            labelText: 'Eklenecek Miktar',
-                                            suffixText: 'Adet',
-                                          ),
-                                        ),
-                                        actions: [
-                                          TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal')),
-                                          ElevatedButton(
-                                            onPressed: () => Navigator.pop(context, int.tryParse(amountController.text)),
-                                            child: const Text('Ekle'),
-                                          ),
-                                        ],
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ElevatedButton.icon(
+                                      onPressed: () async {
+                                        try {
+                                          await menuService.quickRestock(m.id, 20);
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('${m.name} stok +20 eklendi'), backgroundColor: Colors.green)
+                                            );
+                                          }
+                                        } catch (e) {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red)
+                                            );
+                                          }
+                                        }
+                                      },
+                                      icon: const Icon(Icons.add, size: 14),
+                                      label: const Text('20'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green.shade600,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                       ),
-                                    );
-
-                                    if (result != null && result > 0) {
-                                      try {
-                                        await menuService.quickRestock(m.id, result);
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('${m.name} stok +$result eklendi'))
-                                          );
+                                    ),
+                                    const SizedBox(width: 8),
+                                    ElevatedButton.icon(
+                                      onPressed: () async {
+                                        try {
+                                          await menuService.quickRestock(m.id, 50);
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('${m.name} stok +50 eklendi'), backgroundColor: Colors.blue)
+                                            );
+                                          }
+                                        } catch (e) {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red)
+                                            );
+                                          }
                                         }
-                                      } catch (e) {
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('Hata: $e'))
-                                          );
-                                        }
-                                      }
-                                    }
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                  ),
-                                  child: const Text('Stok Yenile', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                      },
+                                      icon: const Icon(Icons.add, size: 14),
+                                      label: const Text('50'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.blue.shade600,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),

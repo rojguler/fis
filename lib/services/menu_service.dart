@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/meal.dart';
+import 'email_service.dart';
 
 // Service for managing menu and meal data from Firebase
 class MenuService extends ChangeNotifier {
@@ -449,6 +450,10 @@ class MenuService extends ChangeNotifier {
       }
       
       await fetchTodayMenu();
+
+      // Yeni menü eklendiğinde tüm kullanıcılara asenkron olarak mail at
+      EmailService.sendMenuUpdateEmail().catchError((e) => debugPrint("Mail hatası: \$e"));
+      
     } catch (e) {
       debugPrint('Error setting today menu: $e');
       rethrow;

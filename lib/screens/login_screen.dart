@@ -5,7 +5,6 @@ import '../main.dart';
 import '../services/auth_service.dart';
 import '../services/language_service.dart';
 import 'signup_screen.dart';
-import 'home_screen.dart';
 import 'main_nav_screen.dart';
 
 class LoginScreen extends StatefulWidget {

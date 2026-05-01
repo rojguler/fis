@@ -66,12 +66,18 @@ class _SignUpScreenState extends State<SignUpScreen>
     if (!mounted) return;
 
     if (error != null) {
+      final isSuccessMsg = error.contains('Kayıt başarılı');
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(error, style: GoogleFonts.poppins()),
-        backgroundColor: Colors.redAccent,
+        backgroundColor: isSuccessMsg ? Colors.green : Colors.redAccent,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: isSuccessMsg ? const Duration(seconds: 5) : const Duration(seconds: 3),
       ));
+
+      if (isSuccessMsg) {
+        Navigator.of(context).pop(); // Kayıt sayfasına pop edip Login'e döndür
+      }
     } else {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MainNavScreen()),
