@@ -1,6 +1,6 @@
-# iKAS Fiş - Akıllı Yemek & Sipariş Sistemi 🍽️
+# iKAS Fis - Akıllı Yemek & Sipariş Sistemi 🍽️
 
-iKAS Fiş, kullanıcıların günlük menüleri takip edebildiği, kalori ve besin değerlerini inceleyebildiği ve saniyeler içinde sipariş verip gerçek zamanlı takip edebildiği modern bir Flutter uygulamasıdır.
+iKAS Fis, kullanıcıların günlük menüleri takip edebildiği, kalori ve besin değerlerini inceleyebildiği ve saniyeler içinde sipariş verip gerçek zamanlı takip edebildiği modern bir Flutter uygulamasıdır.
 
 ## 🚀 Öne Çıkan Özellikler
 
