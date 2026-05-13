@@ -201,12 +201,8 @@ class _LoginScreenState extends State<LoginScreen>
                           Icons.email_outlined,
                         ),
                         validator: (v) {
-                          if (v == null || v.isEmpty) {
-                            return 'Please enter your email';
-                          }
-                          if (!v.contains('@')) {
-                            return 'Please enter a valid email';
-                          }
+                          if (v == null || v.isEmpty) return lang.isTurkish ? 'Lütfen e-posta adresinizi girin' : 'Please enter your email';
+                          if (!v.contains('@')) return lang.isTurkish ? 'Geçerli bir e-posta girin' : 'Please enter a valid email';
                           return null;
                         },
                       ),
@@ -235,12 +231,8 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                         ),
                         validator: (v) {
-                          if (v == null || v.isEmpty) {
-                            return 'Please enter your password';
-                          }
-                          if (v.length < 6) {
-                            return 'At least 6 characters required';
-                          }
+                          if (v == null || v.isEmpty) return lang.isTurkish ? 'Lütfen şifrenizi girin' : 'Please enter your password';
+                          if (v.length < 6) return lang.isTurkish ? 'En az 6 karakter gerekli' : 'At least 6 characters required';
                           return null;
                         },
                       ),

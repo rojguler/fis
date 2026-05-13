@@ -7,6 +7,8 @@ iKAS Fis, kullanıcıların günlük menüleri takip edebildiği, kalori ve besi
 - **Modern UI/UX:** Dark mode destekli, Google Fonts (Poppins) ile güçlendirilmiş premium tasarım.
 - **Gerçek Zamanlı Takip:** Sipariş durumunu (Hazırlanıyor, Hazır, Tamamlandı) anlık olarak takip edin.
 - **E-Posta Bildirimleri:** Menü güncellemeleri ve sipariş durum değişikliklerinde otomatik e-posta bildirimleri (Brevo API).
+- **Sipariş İzolasyonu:** Kullanıcıların sadece kendi sipariş geçmişlerini görebilmesini sağlayan güvenlik katmanı.
+- **APK İndirme Sayfası:** Uygulamanın en güncel versiyonuna erişim için özel landing page.
 - **Stok Yönetimi:** Admin paneli üzerinden anlık stok takibi ve otomatik stok düşümü/iadesi.
 - **Besin Analizi:** Yemeklerin kalori, protein ve alerjen bilgilerini görüntüleme.
 - **Admin Paneli:** Ürün ekleme, düzenleme ve sipariş yönetimi için kapsamlı kontrol merkezi.

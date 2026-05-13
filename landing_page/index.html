@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iKAS Fis | Akıllı Yemek & Sipariş Sistemi</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="cursor-glow"></div>
+    
+    <nav>
+        <div class="container">
+            <div class="logo">
+                <span>iKAS <b>Fis</b></span>
+            </div>
+            <div class="nav-content">
+                <ul class="nav-links">
+                    <li><a href="#features" data-tr="Özellikler" data-en="Features">Özellikler</a></li>
+                    <li><a href="#how-it-works" data-tr="Sistem" data-en="System">Sistem</a></li>
+                </ul>
+                <div class="lang-switch">
+                    <span id="lang-tr" class="active">TR</span>
+                    <span id="lang-en">EN</span>
+                </div>
+                <a href="#download" class="btn-nav" data-tr="İndir" data-en="Download">İndir</a>
+            </div>
+        </div>
+    </nav>
+
+    <header>
+        <div class="container hero-layout">
+            <div class="hero-text">
+                <div class="top-label" data-tr="Üniversite & İşletme Çözümü" data-en="University & Business Solution">Üniversite & İşletme Çözümü</div>
+                <h1 id="hero-title" class="animate-up">Yemek Siparişinde <br><span>Akıllı Dönem</span></h1>
+                <p id="hero-desc" class="animate-up delay-1">iKAS Fis ile yemeklerinizi saniyeler içinde sipariş edin, besin değerlerini görün ve gerçek zamanlı takip edin.</p>
+                <div class="hero-actions animate-up delay-2">
+                    <a href="app-release.apk" download class="btn-main">
+                        <i class="fab fa-android"></i> Android APK
+                    </a>
+                    <a href="#" class="btn-sub">
+                        <i class="fab fa-apple"></i> iOS App
+                    </a>
+                </div>
+            </div>
+            <div class="hero-mockup animate-fade">
+                <!-- CSS Based Phone Frame - Real App Homepage Simulation -->
+                <div class="phone-frame">
+                    <div class="phone-screen">
+                        <!-- App Header -->
+                        <div class="app-top-header">
+                            <div class="app-row">
+                                <span class="app-brand">iKAS Fis</span>
+                                <div class="app-icons">
+                                    <div class="app-icon-sm"></div>
+                                    <div class="app-icon-sm"></div>
+                                </div>
+                            </div>
+                            <div class="app-greeting">
+                                <div class="greet-1" data-tr="Merhaba!" data-en="Hello!">Merhaba!</div>
+                                <div class="greet-2" data-tr="Bugünün menüsüne göz at" data-en="Check today's menu">Bugünün menüsüne göz at</div>
+                            </div>
+                        </div>
+                        
+                        <!-- App Content -->
+                        <div class="app-scroll-content">
+                            <div class="app-search-bar">
+                                <i class="fas fa-search"></i>
+                                <div class="search-ph"></div>
+                            </div>
+                            
+                            <div class="app-promo">
+                                <div class="promo-content">
+                                    <div class="promo-t"></div>
+                                    <div class="promo-st"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="app-categories">
+                                <div class="app-cat-item"><div class="cat-circle active"></div></div>
+                                <div class="app-cat-item"><div class="cat-circle"></div></div>
+                                <div class="app-cat-item"><div class="cat-circle"></div></div>
+                                <div class="app-cat-item"><div class="cat-circle"></div></div>
+                            </div>
+                            
+                            <div class="app-meal-card">
+                                <div class="meal-img-box"></div>
+                                <div class="meal-details">
+                                    <div class="meal-name"></div>
+                                    <div class="meal-price">₺85.00</div>
+                                </div>
+                                <div class="meal-plus">
+                                    <i class="fas fa-plus"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="app-meal-card">
+                                <div class="meal-img-box"></div>
+                                <div class="meal-details">
+                                    <div class="meal-name"></div>
+                                    <div class="meal-price">₺45.00</div>
+                                </div>
+                                <div class="meal-plus">
+                                    <i class="fas fa-plus"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title text-center" data-tr="Neden iKAS Fis?" data-en="Why iKAS Fis?">Neden iKAS Fis?</h2>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="icon-circle"><i class="fas fa-clock"></i></div>
+                    <h3 data-tr="Canlı Takip" data-en="Live Tracking">Canlı Takip</h3>
+                    <p data-tr="Siparişinizin durumunu mutfaktan teslime kadar anlık olarak izleyin." data-en="Track your order status from kitchen to delivery instantly.">Siparişinizin durumunu mutfaktan teslime kadar anlık olarak izleyin.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="icon-circle"><i class="fas fa-bowl-food"></i></div>
+                    <h3 data-tr="Günlük Menü" data-en="Daily Menu">Günlük Menü</h3>
+                    <p data-tr="Her gün yenilenen taze yemek seçeneklerini uygulama üzerinden görüntüleyin." data-en="View fresh daily meal options through the app.">Her gün yenilenen taze yemek seçeneklerini uygulama üzerinden görüntüleyin.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="icon-circle"><i class="fas fa-notes-medical"></i></div>
+                    <h3 data-tr="Besin Analizi" data-en="Nutrient Analysis">Besin Analizi</h3>
+                    <p data-tr="Kalori, protein ve alerjen bilgilerine sipariş vermeden önce ulaşın." data-en="Access calorie, protein, and allergen info before placing an order.">Kalori, protein ve alerjen bilgilerine sipariş vermeden önce ulaşın.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="how-it-works" class="how">
+        <div class="container">
+            <h2 class="section-title text-center" data-tr="Sistem Nasıl Çalışır?" data-en="How the System Works?">Sistem Nasıl Çalışır?</h2>
+            <div class="how-grid">
+                <div class="how-step">
+                    <div class="num">1</div>
+                    <h4 data-tr="Menüyü İncele" data-en="Browse Menu">Menüyü İncele</h4>
+                    <p data-tr="Günlük menüden seçimini yap." data-en="Make your choice from daily menu.">Günlük menüden seçimini yap.</p>
+                </div>
+                <div class="how-step">
+                    <div class="num">2</div>
+                    <h4 data-tr="Siparişini Ver" data-en="Place Order">Siparişini Ver</h4>
+                    <p data-tr="Onayla ve numaranı al." data-en="Confirm and get your number.">Onayla ve numaranı al.</p>
+                </div>
+                <div class="how-step">
+                    <div class="num">3</div>
+                    <h4 data-tr="Kafeteryada Öde" data-en="Pay at Cafeteria">Kafeteryada Öde</h4>
+                    <p data-tr="Ödemeyi markette yap ve teslim al." data-en="Pay at market and pick up.">Ödemeyi markette yap ve teslim al.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="download" class="download">
+        <div class="container text-center">
+            <h2 data-tr="Uygulamayı Hemen İndir" data-en="Download App Now">Uygulamayı Hemen İndir</h2>
+            <div class="download-btns">
+                <a href="app-release.apk" download class="btn-main">Android APK</a>
+                <a href="#" class="btn-sub">iOS App</a>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container footer-flex">
+            <div class="logo">
+                <span>iKAS <b>Fis</b></span>
+            </div>
+            <p>&copy; 2024 iKAS Fis. <span data-tr="Tüm hakları saklıdır." data-en="All rights reserved.">Tüm hakları saklıdır.</span></p>
+        </div>
+    </footer>
+
+    <script>
+        const translations = {
+            tr: {
+                heroTitle: "Yemek Siparişinde <br><span>Akıllı Dönem</span>",
+                heroDesc: "iKAS Fis ile kampüs ve iş yerinizdeki yemekleri saniyeler içinde sipariş edin, besin değerlerini görün ve gerçek zamanlı takip edin."
+            },
+            en: {
+                heroTitle: "Smart Era in <br><span>Food Ordering</span>",
+                heroDesc: "Order meals in seconds, see nutritional values, and track in real-time at your campus or workplace with iKAS Fis."
+            }
+        };
+
+        const btnTr = document.getElementById('lang-tr');
+        const btnEn = document.getElementById('lang-en');
+
+        function setLanguage(lang) {
+            document.querySelectorAll('[data-' + lang + ']').forEach(el => {
+                el.innerText = el.getAttribute('data-' + lang);
+            });
+            document.getElementById('hero-title').innerHTML = translations[lang].heroTitle;
+            document.getElementById('hero-desc').innerText = translations[lang].heroDesc;
+            
+            btnTr.classList.toggle('active', lang === 'tr');
+            btnEn.classList.toggle('active', lang === 'en');
+        }
+
+        btnTr.onclick = () => setLanguage('tr');
+        btnEn.onclick = () => setLanguage('en');
+
+        document.addEventListener('mousemove', (e) => {
+            const glow = document.querySelector('.cursor-glow');
+            glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+        });
+    </script>
+</body>
+</html>

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/coupon_service.dart';
+import '../services/language_service.dart';
 import '../main.dart';
 
 class CouponScreen extends StatelessWidget {
@@ -11,11 +12,11 @@ class CouponScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    final lang = Provider.of<LanguageService>(context);
     return Scaffold(
       backgroundColor: isDark ? IKASColors.darkBg : IKASColors.background,
       appBar: AppBar(
-        title: Text('My Coupons', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
+        title: Text(lang.isTurkish ? 'Kuponlarım' : 'My Coupons', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
@@ -33,38 +34,41 @@ class CouponScreen extends StatelessWidget {
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.all(32.0),
-                    child: Text('No coupons available.', style: GoogleFonts.poppins(color: Colors.grey)),
+                    child: Text(
+                      lang.isTurkish ? 'Henüz kupon bulunmuyor.' : 'No coupons available.',
+                      style: GoogleFonts.poppins(color: Colors.grey),
+                    ),
                   ),
                 ),
               if (activeCoupons.isNotEmpty) ...[
                 Text(
-                  'Active Coupons',
+                  lang.isTurkish ? 'Aktif Kuponlar' : 'Active Coupons',
                   style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: isDark ? Colors.white : IKASColors.textDark),
                 ),
                 const SizedBox(height: 12),
                 ...activeCoupons.map((c) {
                   final discount = c.discountPercentage > 0 
-                      ? '${(c.discountPercentage * 100).toInt()}% OFF'
-                      : '₺${c.discountAmount.toStringAsFixed(2)} OFF';
-                  final expiry = 'Expires: ${c.expiryDate.day}/${c.expiryDate.month}/${c.expiryDate.year}';
-                  return _couponCard(isDark, c.code, discount, c.description, expiry, Colors.green);
+                      ? '%${(c.discountPercentage * 100).toInt()} ${lang.isTurkish ? "İNDİRİM" : "OFF"}'
+                      : '₺${c.discountAmount.toStringAsFixed(2)} ${lang.isTurkish ? "İNDİRİM" : "OFF"}';
+                  final expiry = '${lang.isTurkish ? "Son Kullanım" : "Expires"}: ${c.expiryDate.day}/${c.expiryDate.month}/${c.expiryDate.year}';
+                  return _couponCard(isDark, lang, c.code, discount, c.description, expiry, Colors.green);
                 }).toList(),
               ],
               
               if (inactiveCoupons.isNotEmpty) ...[
                 const SizedBox(height: 20),
                 Text(
-                  'Inactive Coupons',
+                  lang.isTurkish ? 'Pasif Kuponlar' : 'Inactive Coupons',
                   style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.grey),
                 ),
                 const SizedBox(height: 12),
                 ...inactiveCoupons.map((c) {
                   final discount = c.discountPercentage > 0 
-                      ? '${(c.discountPercentage * 100).toInt()}% OFF'
-                      : '₺${c.discountAmount.toStringAsFixed(2)} OFF';
+                      ? '%${(c.discountPercentage * 100).toInt()} ${lang.isTurkish ? "İNDİRİM" : "OFF"}'
+                      : '₺${c.discountAmount.toStringAsFixed(2)} ${lang.isTurkish ? "İNDİRİM" : "OFF"}';
                   return Opacity(
                     opacity: 0.5,
-                    child: _couponCard(isDark, c.code, discount, c.description, 'Expired or Inactive', Colors.grey),
+                    child: _couponCard(isDark, lang, c.code, discount, c.description, lang.isTurkish ? 'Süresi Dolmuş' : 'Expired or Inactive', Colors.grey),
                   );
                 }).toList(),
               ],
@@ -75,7 +79,7 @@ class CouponScreen extends StatelessWidget {
     );
   }
 
-  Widget _couponCard(bool isDark, String code, String discount, String desc, String expiry, Color color) {
+  Widget _couponCard(bool isDark, LanguageService lang, String code, String discount, String desc, String expiry, Color color) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -130,7 +134,7 @@ class CouponScreen extends StatelessWidget {
                         children: [
                           Text(code, style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 13, color: color)),
                           const SizedBox(height: 2),
-                          Text('COPY', style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: color)),
+                          Text(lang.isTurkish ? 'KOPYALA' : 'COPY', style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: color)),
                         ],
                       ),
                     ),

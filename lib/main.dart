@@ -5,9 +5,11 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:app_links/app_links.dart';
 import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_nav_screen.dart';
+import 'screens/order_tracking_screen.dart';
 import 'services/menu_service.dart';
 import 'services/auth_service.dart';
 import 'services/cart_service.dart';
@@ -44,6 +46,9 @@ class IKASColors {
 // ─── Global Key for Notifications ─────────────────────────────────────────────
 final GlobalKey<ScaffoldMessengerState> globalMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
+// ─── Global Navigator Key (for deep link navigation) ──────────────────────────
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
@@ -74,11 +79,92 @@ void main() async {
 
     // Seed database only if empty (production-safe)
     await SeedService.seedIfEmpty();
+
+    // Deep link: initial link (app launched from link while cold)
+    final appLinks = AppLinks();
+    final initialUri = await appLinks.getInitialLink();
+    if (initialUri != null) {
+      _handleDeepLink(initialUri);
+    }
+    // Deep link: listen while app is running (warm/hot)
+    appLinks.uriLinkStream.listen((uri) {
+      _handleDeepLink(uri);
+    }, onError: (e) => debugPrint('Deep link error: $e'));
   } catch (e) {
     debugPrint('Firebase error: $e');
   }
 
   runApp(const MyApp());
+}
+
+// ─── Deep Link Handler ────────────────────────────────────────────────────────
+void _handleDeepLink(Uri uri) {
+  final nav = navigatorKey.currentState;
+  if (nav == null) return;
+
+  debugPrint('Deep link received: $uri');
+
+  // ikasfis://home  → Ana sayfa (zaten orada, sadece aktifleştir)
+  if (uri.host == 'home') {
+    nav.popUntil((route) => route.isFirst);
+    return;
+  }
+
+  // ikasfis://order/<orderId>  → Sipariş takip sayfası
+  if (uri.host == 'order' || uri.host == 'tracking') {
+    final orderId = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+    if (orderId != null) {
+      // Firestore'dan siparişi çekip OrderTrackingScreen'e yönlendir
+      nav.push(
+        MaterialPageRoute(
+          builder: (_) => _OrderDeepLinkScreen(orderId: orderId),
+        ),
+      );
+    }
+    return;
+  }
+}
+
+/// Firestore'dan sipariş çekip takip ekranını açan wrapper widget
+class _OrderDeepLinkScreen extends StatefulWidget {
+  final String orderId;
+  const _OrderDeepLinkScreen({required this.orderId});
+
+  @override
+  State<_OrderDeepLinkScreen> createState() => _OrderDeepLinkScreenState();
+}
+
+class _OrderDeepLinkScreenState extends State<_OrderDeepLinkScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final orderService = Provider.of<OrderService>(context, listen: false);
+      // Wait briefly for orders to load if empty
+      if (orderService.orders.isEmpty) {
+        await Future.delayed(const Duration(milliseconds: 800));
+      }
+      final order = orderService.orders
+          .where((o) => o.id == widget.orderId)
+          .firstOrNull;
+      if (order != null && mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => OrderTrackingScreen(order: order)),
+        );
+      } else if (mounted) {
+        // Order not found — go home
+        Navigator.pop(context);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -112,9 +198,10 @@ class MyApp extends StatelessWidget {
       child: Consumer2<ThemeService, LanguageService>(
         builder: (context, themeService, langService, _) {
           return MaterialApp(
-            title: 'IKAS Super Market',
+            title: 'IKAS Fis',
             debugShowCheckedModeBanner: false,
             scaffoldMessengerKey: globalMessengerKey,
+            navigatorKey: navigatorKey,
             themeMode: themeService.mode,
             theme: _buildTheme(Brightness.light),
             darkTheme: _buildTheme(Brightness.dark),

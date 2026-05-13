@@ -3,21 +3,60 @@ import '../models/cart_item.dart';
 import '../models/meal.dart';
 import '../services/menu_service.dart';
 
+import '../services/coupon_service.dart';
+
 // Service for managing shopping cart
 class CartService extends ChangeNotifier {
   static const int maxItemLimit = 999;
   
   final List<CartItem> _items = [];
   final MenuService _menuService;
+  Coupon? _appliedCoupon;
 
   CartService(this._menuService);
 
   List<CartItem> get items => _items;
+  Coupon? get appliedCoupon => _appliedCoupon;
   
   // Get total number of items in cart
   int get itemCount => _items.fold(0, (sum, item) => sum + item.quantity);
-  // Get total price of all items in cart
-  double get totalPrice => _items.fold(0.0, (sum, item) => sum + item.totalPrice);
+  
+  // Get total price of all items in cart before discount
+  double get subtotal => _items.fold(0.0, (sum, item) => sum + item.totalPrice);
+  
+  // Get total price of all items in cart (backwards compatibility)
+  double get totalPrice => subtotal;
+
+  // Get discount amount based on applied coupon
+  double get discountAmount {
+    if (_appliedCoupon == null) return 0.0;
+    
+    double discount = 0.0;
+    if (_appliedCoupon!.discountAmount > 0) {
+      discount = _appliedCoupon!.discountAmount;
+    } else if (_appliedCoupon!.discountPercentage > 0) {
+      double p = _appliedCoupon!.discountPercentage;
+      if (p > 1.0) p /= 100.0;
+      discount = subtotal * p;
+    }
+    
+    return discount > subtotal ? subtotal : discount;
+  }
+
+  // Get final price after discount
+  double get finalPrice => subtotal - discountAmount;
+  
+  // Apply coupon
+  void applyCoupon(Coupon coupon) {
+    _appliedCoupon = coupon;
+    notifyListeners();
+  }
+
+  // Remove coupon
+  void removeCoupon() {
+    _appliedCoupon = null;
+    notifyListeners();
+  }
   
   // ── Nutrition summary ──────────────────────────────────────────────────────
   int get totalCalories => _items.fold(0, (sum, item) => sum + (item.meal.calories * item.quantity));
@@ -93,6 +132,7 @@ class CartService extends ChangeNotifier {
   // Clear all items from cart
   void clearCart() {
     _items.clear();
+    _appliedCoupon = null;
     notifyListeners();
   }
 

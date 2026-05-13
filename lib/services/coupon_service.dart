@@ -117,4 +117,33 @@ class CouponService extends ChangeNotifier {
       return null;
     }
   }
+
+  // Delete all coupons from Firestore
+  Future<void> deleteAllCoupons() async {
+    try {
+      final snapshot = await _firestore.collection('coupons').get();
+      final batch = _firestore.batch();
+      for (var doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+      // No need to fetch, the listener will handle it.
+    } catch (e) {
+      debugPrint('Error deleting coupons: $e');
+      rethrow;
+    }
+  }
+
+  // Seed initial clean coupons
+  Future<void> seedInitialCoupons() async {
+    final initialCoupons = [
+      Coupon(id: '', code: 'FIS10', discountAmount: 0, discountPercentage: 10, description: '%10 Discount', expiryDate: DateTime.now().add(const Duration(days: 365)), isActive: true),
+      Coupon(id: '', code: 'SAVE20', discountAmount: 20, discountPercentage: 0, description: '20 TL Discount', expiryDate: DateTime.now().add(const Duration(days: 365)), isActive: true),
+      Coupon(id: '', code: 'FIS50', discountAmount: 0, discountPercentage: 50, description: '%50 Super Discount', expiryDate: DateTime.now().add(const Duration(days: 365)), isActive: true),
+    ];
+
+    for (var c in initialCoupons) {
+      await createCoupon(c);
+    }
+  }
 }

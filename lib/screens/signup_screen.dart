@@ -60,6 +60,7 @@ class _SignUpScreenState extends State<SignUpScreen>
       adminCode: _adminCodeController.text.trim().isNotEmpty
           ? _adminCodeController.text.trim()
           : null,
+      languageCode: Provider.of<LanguageService>(context, listen: false).code,
     );
 
     setState(() => _isLoading = false);
@@ -208,8 +209,8 @@ class _SignUpScreenState extends State<SignUpScreen>
                         hint: lang.fullName,
                         icon: Icons.person_outline_rounded,
                         validator: (v) {
-                          if (v == null || v.isEmpty) return 'Adınızı girin';
-                          if (v.length < 2) return 'En az 2 karakter';
+                          if (v == null || v.isEmpty) return lang.isTurkish ? 'Adınızı girin' : 'Enter your name';
+                          if (v.length < 2) return lang.isTurkish ? 'En az 2 karakter' : 'At least 2 characters';
                           return null;
                         },
                       ),
@@ -224,8 +225,8 @@ class _SignUpScreenState extends State<SignUpScreen>
                         icon: Icons.email_outlined,
                         keyboardType: TextInputType.emailAddress,
                         validator: (v) {
-                          if (v == null || v.isEmpty) return 'E-posta girin';
-                          if (!v.contains('@')) return 'Geçerli e-posta girin';
+                          if (v == null || v.isEmpty) return lang.isTurkish ? 'E-posta girin' : 'Enter email';
+                          if (!v.contains('@')) return lang.isTurkish ? 'Geçerli e-posta girin' : 'Enter valid email';
                           return null;
                         },
                       ),
@@ -251,8 +252,8 @@ class _SignUpScreenState extends State<SignUpScreen>
                               () => _obscurePassword = !_obscurePassword),
                         ),
                         validator: (v) {
-                          if (v == null || v.isEmpty) return 'Şifre girin';
-                          if (v.length < 6) return 'En az 6 karakter';
+                          if (v == null || v.isEmpty) return lang.isTurkish ? 'Şifre girin' : 'Enter password';
+                          if (v.length < 6) return lang.isTurkish ? 'En az 6 karakter' : 'At least 6 characters';
                           return null;
                         },
                       ),
@@ -279,8 +280,8 @@ class _SignUpScreenState extends State<SignUpScreen>
                                   !_obscureConfirmPassword),
                         ),
                         validator: (v) {
-                          if (v == null || v.isEmpty) return 'Şifreyi tekrar girin';
-                          if (v != _passwordController.text) return 'Şifreler eşleşmiyor';
+                          if (v == null || v.isEmpty) return lang.isTurkish ? 'Şifreyi tekrar girin' : 'Confirm your password';
+                          if (v != _passwordController.text) return lang.isTurkish ? 'Şifreler eşleşmiyor' : 'Passwords do not match';
                           return null;
                         },
                       ),

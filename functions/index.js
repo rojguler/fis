@@ -105,7 +105,7 @@ exports.onMenuUpdate = functions.firestore
 
             // 🔥 Mail içeriği ve API isteği (Gizlilik için BCC kullanılır, To'da kendi adresiniz olur)
             const senderEmail = process.env.SENDER_EMAIL || "noreply@fisapp.com"; 
-            const senderName = "Fiş App";
+            const senderName = "Fis App";
 
             const data = JSON.stringify({
                 sender: { name: senderName, email: senderEmail },
@@ -116,7 +116,7 @@ exports.onMenuUpdate = functions.firestore
                     <div style="font-family: sans-serif; text-align: center; color: #333;">
                         <h2>Yeni Menü Yayında 🚀</h2>
                         <p>Bugünün yemeklerini kontrol etmeyi unutma!</p>
-                        <p>Uygulamayı aç → <b>Fiş App</b></p>
+                        <p>Uygulamayı aç → <b>Fis App</b></p>
                     </div>
                 `
             });

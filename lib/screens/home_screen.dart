@@ -126,15 +126,19 @@ class _HomeScreenState extends State<HomeScreen>
                       SliverToBoxAdapter(child: _buildPromoBanner()),
                       Consumer<MenuService>(
                         builder: (context, menuService, _) {
-                          final sourceList = menuService.meals;
+                          // Günlük menü varsa sadece onu göster; yoksa tüm menü
+                          final hasDailyMenu = menuService.todayMeals.isNotEmpty;
+                          final sourceList = hasDailyMenu ? menuService.todayMeals : menuService.meals;
                           final filteredMeals = _filterMeals(sourceList);
 
                           return SliverList(
                             delegate: SliverChildListDelegate([
                               _buildActiveOrderTrackerWidget(context),
-                              if (_searchQuery.isEmpty && _selectedCategory == 'all' && sourceList.isNotEmpty)
+                              if (hasDailyMenu && _searchQuery.isEmpty && _selectedCategory == 'all')
+                                _buildDailyMenuBanner(context),
+                              if (_searchQuery.isEmpty && _selectedCategory == 'all' && !hasDailyMenu && sourceList.isNotEmpty)
                                 _buildTrendingNow(sourceList),
-                              if (menuService.todayMeals.isNotEmpty && _searchQuery.isEmpty && _selectedCategory == 'all')
+                              if (hasDailyMenu && _searchQuery.isEmpty && _selectedCategory == 'all')
                                 _buildStoryMenu(menuService.todayMeals),
                               _buildChips(),
                               _buildDietFilters(),
@@ -468,6 +472,58 @@ class _HomeScreenState extends State<HomeScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDailyMenuBanner(BuildContext context) {
+    final menuService = Provider.of<MenuService>(context, listen: false);
+    final count = menuService.todayMeals.length;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [IKASColors.primaryDark.withOpacity(0.9), IKASColors.accent.withOpacity(0.85)],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(color: IKASColors.primary.withOpacity(0.25), blurRadius: 12, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Text('📋', style: TextStyle(fontSize: 28)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  lang.isTurkish ? 'Günün Menüsü Aktif' : 'Daily Menu Active',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 14, color: Colors.white),
+                ),
+                Text(
+                  lang.isTurkish
+                      ? 'Bugün sadece $count ürün satışta'
+                      : 'Only $count items available today',
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.white.withOpacity(0.85)),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              lang.isTurkish ? 'Bugün' : 'Today',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.white),
+            ),
+          ),
+        ],
       ),
     );
   }

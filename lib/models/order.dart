@@ -15,6 +15,7 @@ class Order {
   final String userId;
   final List<CartItem> items;
   final double totalPrice;
+  final double discountAmount;
   final DateTime createdAt;
   final OrderStatus status;
   final String? notes;
@@ -26,6 +27,7 @@ class Order {
     required this.userId,
     required this.items,
     required this.totalPrice,
+    this.discountAmount = 0.0,
     required this.createdAt,
     this.status = OrderStatus.pending,
     this.notes,
@@ -40,6 +42,7 @@ class Order {
       userId: data['userId'] ?? '',
       items: items,
       totalPrice: (data['totalPrice'] ?? 0.0).toDouble(),
+      discountAmount: (data['discountAmount'] ?? 0.0).toDouble(),
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       status: OrderStatus.values.firstWhere(
         (s) => s.toString().split('.').last == (data['status'] ?? 'pending'),
@@ -57,6 +60,7 @@ class Order {
       'userId': userId,
       'items': items.map((item) => item.toMap()).toList(),
       'totalPrice': totalPrice,
+      'discountAmount': discountAmount,
       'createdAt': Timestamp.fromDate(createdAt),
       'status': status.toString().split('.').last,
       'notes': notes,

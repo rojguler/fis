@@ -204,9 +204,9 @@ class ProfileScreen extends StatelessWidget {
               SliverToBoxAdapter(
                 child: Consumer<OrderService>(
                   builder: (ctx, orderService, _) {
-                    final totalOrders = orderService.orders.length;
-                    final totalSpent = orderService.orders.fold<double>(0, (sum, o) => sum + o.totalPrice);
-                    final completedOrders = orderService.orders.where((o) => o.status == models.OrderStatus.completed).length;
+                    final totalOrders = orderService.userOrders.length;
+                    final totalSpent = orderService.userOrders.fold<double>(0, (sum, o) => sum + o.totalPrice);
+                    final completedOrders = orderService.userOrders.where((o) => o.status == models.OrderStatus.completed).length;
 
                     return Padding(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -253,7 +253,7 @@ class ProfileScreen extends StatelessWidget {
                         children: [
                           _sectionHeader(
                             title: lang.myOrders,
-                            trailing: orderService.orders.isNotEmpty
+                            trailing: orderService.userOrders.isNotEmpty
                                 ? TextButton(
                                     onPressed: () => orderService
                                         .fetchUserOrders(authService.currentUserId),
@@ -266,16 +266,16 @@ class ProfileScreen extends StatelessWidget {
                             isDark: isDark,
                           ),
                           const SizedBox(height: 12),
-                          if (orderService.orders.isEmpty)
+                          if (orderService.userOrders.isEmpty)
                             _emptyOrders(isDark, lang)
                           else
                             SizedBox(
                               height: 155,
                               child: ListView.builder(
                                 scrollDirection: Axis.horizontal,
-                                itemCount: orderService.orders.length,
+                                itemCount: orderService.userOrders.length,
                                 itemBuilder: (ctx, i) =>
-                                    _orderCard(context, orderService.orders[i], isDark),
+                                    _orderCard(context, orderService.userOrders[i], isDark),
                               ),
                             ),
                         ],

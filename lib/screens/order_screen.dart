@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
 import '../services/cart_service.dart';
+import '../main.dart';
 import '../services/order_service.dart';
 import '../services/auth_service.dart';
 import '../models/order.dart' as models;
@@ -19,14 +20,11 @@ class OrderScreen extends StatefulWidget {
 
 class _OrderScreenState extends State<OrderScreen> {
   final TextEditingController _notesController = TextEditingController();
-  final TextEditingController _couponController = TextEditingController();
   bool _isCreatingOrder = false;
-  Coupon? _appliedCoupon;
 
   @override
   void dispose() {
     _notesController.dispose();
-    _couponController.dispose();
     super.dispose();
   }
 
@@ -84,10 +82,6 @@ class _OrderScreenState extends State<OrderScreen> {
 
                 // Notes section
                 _buildNotesSection(lang),
-                const SizedBox(height: 24),
-
-                // Coupon section
-                _buildCouponSection(lang),
                 const SizedBox(height: 32),
               ],
             ),
@@ -312,7 +306,7 @@ class _OrderScreenState extends State<OrderScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '${item.quantity} pcs',
+                        '${item.quantity} ${lang.isTurkish ? 'adet' : 'pcs'}',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[700],
@@ -360,133 +354,61 @@ class _OrderScreenState extends State<OrderScreen> {
     );
   }
 
-  Widget _buildCouponSection(LanguageService lang) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          lang.isTurkish ? 'İndirim Kuponu' : 'Discount Coupon',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _couponController,
-                decoration: InputDecoration(
-                  hintText: lang.isTurkish ? 'Kupon kodunu girin' : 'Enter coupon code',
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            ElevatedButton(
-              onPressed: () async {
-                final code = _couponController.text.trim();
-                if (code.isEmpty) return;
-                final couponService = Provider.of<CouponService>(context, listen: false);
-                final coupon = await couponService.validateCoupon(code);
-                if (coupon != null) {
-                  setState(() => _appliedCoupon = coupon);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Coupon applied!'), backgroundColor: Colors.green));
-                  }
-                } else {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Invalid or expired coupon.'), backgroundColor: Colors.red));
-                  }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: Text(lang.isTurkish ? 'Uygula' : 'Apply'),
-            ),
-          ],
-        ),
-        if (_appliedCoupon != null) ...[
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.green, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                '${_appliedCoupon!.code} applied!',
-                style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
-              ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.grey, size: 18),
-                onPressed: () {
-                  setState(() {
-                    _appliedCoupon = null;
-                    _couponController.clear();
-                  });
-                },
-              ),
-            ],
-          ),
-        ]
-      ],
-    );
-  }
 
   // Build total section for bottom navigation bar
   Widget _buildTotalSection(BuildContext context, CartService cartService, LanguageService lang) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.end,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Column(
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        if (cartService.appliedCoupon != null) ...[
+          _buildSummaryRow(lang.isTurkish ? 'Ara Toplam' : 'Subtotal', '₺${cartService.subtotal.toStringAsFixed(2)}', isDark, isStrikethrough: true),
+          const SizedBox(height: 4),
+          _buildSummaryRow(lang.isTurkish ? 'İndirim' : 'Discount', '-₺${cartService.discountAmount.toStringAsFixed(2)}', isDark, color: Colors.redAccent),
+          const Divider(height: 24),
+        ],
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              lang.total,
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(lang.total, style: TextStyle(fontSize: 14, color: isDark ? Colors.white70 : Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
                 Text(
-                  '₺${_getFinalPrice(cartService).toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                  '₺${cartService.finalPrice.toStringAsFixed(2)}',
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: IKASColors.primary),
                 ),
-                if (_appliedCoupon != null) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    '₺${cartService.totalPrice.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      decoration: TextDecoration.lineThrough,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
               ],
             ),
+            if (cartService.appliedCoupon != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                child: Text(cartService.appliedCoupon!.code, style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
+              ),
           ],
         ),
       ],
     );
   }
 
-  double _getFinalPrice(CartService cart) {
-    double total = cart.totalPrice;
-    if (_appliedCoupon != null) {
-      if (_appliedCoupon!.discountAmount > 0) {
-        total -= _appliedCoupon!.discountAmount;
-      } else if (_appliedCoupon!.discountPercentage > 0) {
-        total -= total * _appliedCoupon!.discountPercentage;
-      }
-    }
-    return total > 0 ? total : 0;
+  Widget _buildSummaryRow(String label, String value, bool isDark, {bool isStrikethrough = false, Color? color}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(color: isDark ? Colors.white60 : Colors.grey[600], fontSize: 14)),
+        Text(
+          value,
+          style: TextStyle(
+            color: color ?? (isDark ? Colors.white : Colors.black87),
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            decoration: isStrikethrough ? TextDecoration.lineThrough : null,
+          ),
+        ),
+      ],
+    );
   }
 
   // Build create order button with modern design
@@ -541,74 +463,6 @@ class _OrderScreenState extends State<OrderScreen> {
     );
   }
 
-  // Build info text with modern design
-  Widget _buildInfoText(LanguageService lang) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.blue.withOpacity(0.15),
-            Colors.blue.withOpacity(0.1),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Colors.blue.withOpacity(0.4),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.info_outline,
-              color: Colors.blue[700],
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  lang.paymentInfo,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue[800],
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  lang.paymentWait,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.blue[700],
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   // Create order
   Future<void> _createOrder(BuildContext context, CartService cartService, LanguageService lang) async {
@@ -633,6 +487,8 @@ class _OrderScreenState extends State<OrderScreen> {
       userId: authService.currentUserId,
       items: cartService.items,
       notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      totalPrice: cartService.finalPrice,
+      discountAmount: cartService.discountAmount,
     );
 
     // If order was created successfully and we had a coupon applied, maybe mark it as used?

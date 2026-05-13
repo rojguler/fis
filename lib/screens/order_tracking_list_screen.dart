@@ -30,7 +30,7 @@ class OrderTrackingListScreen extends StatelessWidget {
         builder: (context, auth, _) {
           return Consumer<OrderService>(
             builder: (context, orderService, _) {
-              final orders = orderService.orders;
+              final orders = orderService.userOrders;
 
               if (orders.isEmpty) {
                 return _buildEmptyState(context, lang, isDark);

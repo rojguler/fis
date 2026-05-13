@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,6 +13,7 @@ import 'order_management_screen.dart';
 import '../services/language_service.dart';
 import '../services/seed_service.dart';
 import '../services/coupon_service.dart';
+import '../services/email_service.dart';
 
 // Admin screen for managing daily menus (add, update, delete)
 class AdminScreen extends StatefulWidget {
@@ -228,15 +230,34 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                           color: isDark ? Colors.white : IKASColors.textDark,
                         ),
                       ),
-                      ElevatedButton.icon(
-                        onPressed: () => _showAddMealDialog(context),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: IKASColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        ),
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed: () async {
+                              final lang = Provider.of<LanguageService>(context, listen: false);
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(lang.isTurkish ? 'Diller eşitleniyor...' : 'Syncing languages...')));
+                              await SeedService.forceSeed();
+                              await menuService.fetchAllMeals();
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(lang.isTurkish ? 'Eşitleme Tamamlandı!' : 'Sync Complete!'), backgroundColor: Colors.green));
+                              }
+                            },
+                            icon: const Icon(Icons.sync_rounded),
+                            tooltip: 'Sync Languages',
+                            color: IKASColors.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            onPressed: () => _showAddMealDialog(context),
+                            icon: const Icon(Icons.add),
+                            label: Text(Provider.of<LanguageService>(context, listen: false).isTurkish ? 'Ekle' : 'Add'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: IKASColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -583,7 +604,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
         setLocalState(() => isUploading = false);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Upload failed: $e'), backgroundColor: Colors.red),
+            SnackBar(content: Text(Provider.of<LanguageService>(context, listen: false).isTurkish ? 'Yükleme başarısız: $e' : 'Upload failed: $e'), backgroundColor: Colors.red),
           );
         }
       }
@@ -674,6 +695,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                                 controller: priceController,
                                 keyboardType: TextInputType.number,
                                 decoration: _inputDecoration(context, 'Price (₺) *', Icons.payments_outlined),
+                                onTap: () => priceController.selection = TextSelection(baseOffset: 0, extentOffset: priceController.text.length),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -682,6 +704,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                                 controller: stockController,
                                 keyboardType: TextInputType.number,
                                 decoration: _inputDecoration(context, 'Stock *', Icons.inventory),
+                                onTap: () => stockController.selection = TextSelection(baseOffset: 0, extentOffset: stockController.text.length),
                               ),
                             ),
                           ],
@@ -694,6 +717,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                                 controller: caloriesController,
                                 keyboardType: TextInputType.number,
                                 decoration: _inputDecoration(context, 'Calories *', Icons.local_fire_department_outlined),
+                                onTap: () => caloriesController.selection = TextSelection(baseOffset: 0, extentOffset: caloriesController.text.length),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -708,6 +732,12 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                                   DropdownMenuItem(value: 'dessert', child: Text('Dessert')),
                                   DropdownMenuItem(value: 'drink', child: Text('Beverage')),
                                   DropdownMenuItem(value: 'diet', child: Text('Diet / Diyetik')),
+                                  DropdownMenuItem(value: 'vegetarian', child: Text('Vegetarian')),
+                                  DropdownMenuItem(value: 'vegan', child: Text('Vegan')),
+                                  DropdownMenuItem(value: 'breakfast', child: Text('Breakfast')),
+                                  DropdownMenuItem(value: 'fastfood', child: Text('Fast Food')),
+                                  DropdownMenuItem(value: 'side', child: Text('Side Dish')),
+                                  DropdownMenuItem(value: 'snack', child: Text('Snack')),
                                 ],
                                 onChanged: (value) => setDialogState(() => selectedCategory = value!),
                               ),
@@ -726,6 +756,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                                 controller: proteinController,
                                 keyboardType: TextInputType.number,
                                 decoration: _inputDecoration(context, 'Protein', null),
+                                onTap: () => proteinController.selection = TextSelection(baseOffset: 0, extentOffset: proteinController.text.length),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -734,6 +765,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                                 controller: carbsController,
                                 keyboardType: TextInputType.number,
                                 decoration: _inputDecoration(context, 'Carbs', null),
+                                onTap: () => carbsController.selection = TextSelection(baseOffset: 0, extentOffset: carbsController.text.length),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -742,6 +774,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                                 controller: fatController,
                                 keyboardType: TextInputType.number,
                                 decoration: _inputDecoration(context, 'Fat', null),
+                                onTap: () => fatController.selection = TextSelection(baseOffset: 0, extentOffset: fatController.text.length),
                               ),
                             ),
                           ],
@@ -920,7 +953,9 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                               elevation: 0,
                             ),
                             child: Text(
-                              meal == null ? 'Add Item' : 'Save Changes',
+                              meal == null
+                                  ? (Provider.of<LanguageService>(context, listen: false).isTurkish ? 'Ürünü Ekle' : 'Add Item')
+                                  : (Provider.of<LanguageService>(context, listen: false).isTurkish ? 'Değişiklikleri Kaydet' : 'Save Changes'),
                               style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                             ),
                           ),
@@ -955,6 +990,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
     String allergensStr,
     String imageUrl,
   ) async {
+    final isTurkish = Provider.of<LanguageService>(context, listen: false).isTurkish;
     // Fallbacks for missing localized texts
     if (name.trim().isEmpty && nameTr.trim().isNotEmpty) {
       name = nameTr.trim();
@@ -973,8 +1009,8 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
     if (name.trim().isEmpty || description.trim().isEmpty || priceStr.isEmpty || 
         caloriesStr.isEmpty || stockStr.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please fill in all required fields'),
+          SnackBar(
+            content: Text(isTurkish ? 'Lütfen zorunlu alanları doldurun' : 'Please fill in all required fields'),
             backgroundColor: Colors.red,
           ),
         );
@@ -990,8 +1026,8 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
 
     if (price == null || calories == null || stock == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid numeric value'),
+          SnackBar(
+            content: Text(isTurkish ? 'Geçersiz sayısal değer' : 'Invalid numeric value'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1052,7 +1088,9 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
         Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(meal == null ? 'Item added' : 'Item updated'),
+              content: Text(meal == null
+                  ? (isTurkish ? 'Ürün başarıyla eklendi!' : 'Item added successfully!')
+                  : (isTurkish ? 'Ürün güncellendi!' : 'Item updated successfully!')),
               backgroundColor: Colors.green,
             ),
           );
@@ -1061,7 +1099,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text(isTurkish ? 'Hata: $e' : 'Error: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1071,15 +1109,18 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
 
   // Show delete meal dialog
   void _showDeleteMealDialog(BuildContext context, Meal meal, MenuService menuService) {
+    final lang = Provider.of<LanguageService>(context, listen: false);
+    final isTurkish = lang.isTurkish;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Item'),
-        content: Text('Are you sure you want to delete ${meal.name}?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(isTurkish ? 'Ürünü Sil' : 'Delete Item'),
+        content: Text(isTurkish ? '"${meal.nameTr.isNotEmpty ? meal.nameTr : meal.name}" ürününü silmek istediğinize emin misiniz?' : 'Are you sure you want to delete "${meal.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(lang.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -1088,8 +1129,8 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                 if (context.mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Item deleted'),
+                    SnackBar(
+                      content: Text(isTurkish ? 'Ürün silindi' : 'Item deleted'),
                       backgroundColor: Colors.green,
                     ),
                   );
@@ -1099,14 +1140,14 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Error: $e'),
+                      content: Text(isTurkish ? 'Hata: $e' : 'Error: $e'),
                       backgroundColor: Colors.red,
                     ),
                   );
                 }
               }
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text(isTurkish ? 'Sil' : 'Delete', style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -1176,6 +1217,7 @@ class _DailyMenuTabState extends State<DailyMenuTab> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = Provider.of<LanguageService>(context, listen: false);
 
     return Consumer<MenuService>(
       builder: (context, menuService, child) {
@@ -1205,7 +1247,7 @@ class _DailyMenuTabState extends State<DailyMenuTab> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Daily Menu Management',
+                        lang.isTurkish ? 'Günlük Menü Yönetimi' : 'Daily Menu Management',
                         style: GoogleFonts.poppins(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -1214,7 +1256,7 @@ class _DailyMenuTabState extends State<DailyMenuTab> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Create today\'s menu',
+                        lang.isTurkish ? 'Bugünün menüsünü buradan oluşturun' : 'Create today\'s special menu',
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           color: isDark ? Colors.white54 : Colors.grey[600],
@@ -1224,11 +1266,13 @@ class _DailyMenuTabState extends State<DailyMenuTab> {
                   ),
                   ElevatedButton.icon(
                     onPressed: () => _showSetDailyMenuDialog(context, menuService),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Create Menu'),
+                    icon: const Icon(Icons.add_circle_outline_rounded),
+                    label: Text(lang.isTurkish ? 'Menü Oluştur' : 'Create Menu'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: IKASColors.primary,
                       foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ],
@@ -1249,18 +1293,32 @@ class _DailyMenuTabState extends State<DailyMenuTab> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'No menu created for today',
+                            lang.isTurkish ? 'Bugün için menü oluşturulmadı' : 'No menu created for today',
                             style: GoogleFonts.poppins(
                               fontSize: 18,
+                              fontWeight: FontWeight.w600,
                               color: isDark ? Colors.white54 : Colors.grey[600],
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Click the button above to create a menu',
+                            lang.isTurkish ? 'Yukarıdaki butona tıklayarak menü oluşturun.\nOluşturulan menü anında kullanıcılara yansır.' : 'Tap the button above to create today\'s menu.\nUsers will see it instantly.',
+                            textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(
-                              fontSize: 14,
+                              fontSize: 13,
                               color: isDark ? Colors.white30 : Colors.grey[500],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () => _showSetDailyMenuDialog(context, menuService),
+                            icon: const Icon(Icons.add_circle_outline_rounded),
+                            label: Text(lang.isTurkish ? 'Hemen Menü Oluştur' : 'Create Menu Now'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: IKASColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
                         ],
@@ -1335,21 +1393,7 @@ class _DailyMenuTabState extends State<DailyMenuTab> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: meal.imageUrl.isNotEmpty
-                  ? (meal.imageUrl.startsWith('http')
-                      ? Image.network(
-                          meal.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              _dailyMenuIconFallback(context),
-                        )
-                      : Image.asset(
-                          meal.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              _dailyMenuIconFallback(context),
-                        ))
-                  : _dailyMenuIconFallback(context),
+              child: _buildAdminMealImage(meal.imageUrl, context),
             ),
           ),
           const SizedBox(width: 12),
@@ -1358,7 +1402,7 @@ class _DailyMenuTabState extends State<DailyMenuTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  meal.name,
+                  meal.getLocalizedName(Provider.of<LanguageService>(context, listen: false).isTurkish),
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -1367,7 +1411,7 @@ class _DailyMenuTabState extends State<DailyMenuTab> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '₺${meal.price.toStringAsFixed(2)} • Stock: ${meal.stock}',
+                  '₺${meal.price.toStringAsFixed(2)} • ${Provider.of<LanguageService>(context, listen: false).isTurkish ? 'Stok' : 'Stock'}: ${meal.stock}',
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     color: isDark ? Colors.white54 : Colors.grey[700],
@@ -1394,6 +1438,28 @@ class _DailyMenuTabState extends State<DailyMenuTab> {
       ),
       child: const Icon(Icons.restaurant, color: Colors.white, size: 26),
     );
+  }
+
+  // Unified image builder supporting http, asset and base64
+  Widget _buildAdminMealImage(String imageUrl, BuildContext context) {
+    if (imageUrl.isEmpty) return _dailyMenuIconFallback(context);
+    if (imageUrl.startsWith('http')) {
+      return Image.network(imageUrl, fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _dailyMenuIconFallback(context));
+    }
+    if (imageUrl.startsWith('data:image')) {
+      try {
+        return Image.memory(
+          base64Decode(imageUrl.split(',')[1]),
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _dailyMenuIconFallback(context),
+        );
+      } catch (_) {
+        return _dailyMenuIconFallback(context);
+      }
+    }
+    return Image.asset(imageUrl, fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _dailyMenuIconFallback(context));
   }
 
   void _showSetDailyMenuDialog(BuildContext context, MenuService menuService) {
@@ -1508,11 +1574,7 @@ class _DailyMenuTabState extends State<DailyMenuTab> {
                                     ),
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
-                                      child: meal.imageUrl.isNotEmpty
-                                          ? (meal.imageUrl.startsWith('http')
-                                              ? Image.network(meal.imageUrl, fit: BoxFit.cover, errorBuilder: (_,__,___) => const Icon(Icons.restaurant))
-                                              : Image.asset(meal.imageUrl, fit: BoxFit.cover, errorBuilder: (_,__,___) => const Icon(Icons.restaurant)))
-                                          : const Icon(Icons.restaurant),
+                                      child: _buildAdminMealImage(meal.imageUrl, context),
                                     ),
                                   ),
                                   const SizedBox(width: 12),
@@ -1521,19 +1583,32 @@ class _DailyMenuTabState extends State<DailyMenuTab> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          meal.name,
+                                          meal.getLocalizedName(Provider.of<LanguageService>(context, listen: false).isTurkish),
                                           style: GoogleFonts.poppins(
                                             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                                             fontSize: 15,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
-                                        Text(
-                                          '₺${meal.price.toStringAsFixed(2)}',
-                                          style: GoogleFonts.poppins(
-                                            color: IKASColors.primary,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              '₺${meal.price.toStringAsFixed(2)}',
+                                              style: GoogleFonts.poppins(
+                                                color: IKASColors.primary,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              '${Provider.of<LanguageService>(context, listen: false).isTurkish ? 'Stok' : 'Stock'}: ${meal.stock}',
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 11,
+                                                color: meal.stock <= 5 ? Colors.red : Colors.grey,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
@@ -1623,7 +1698,12 @@ class _DailyMenuTabState extends State<DailyMenuTab> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               elevation: 0,
                             ),
-                            child: Text('Create Menu', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                            child: Text(
+                              Provider.of<LanguageService>(context, listen: false).isTurkish
+                                  ? 'Menüyü Oluştur (${selectedMeals.length} Ürün)'
+                                  : 'Create Menu (${selectedMeals.length} items)',
+                              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                            ),
                           ),
                         ),
                       ],
@@ -1854,6 +1934,20 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                       ),
                                     ),
+                                    const SizedBox(width: 8),
+                                    ElevatedButton.icon(
+                                      onPressed: () => _showSupplierEmailDialog(context, m),
+                                      icon: const Icon(Icons.email_rounded, size: 14),
+                                      label: const Text('Üretici'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.orange.shade700,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ],
@@ -1985,6 +2079,202 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
     );
   }
 
+  void _showSupplierEmailDialog(BuildContext context, meal) {
+    final lang = Provider.of<LanguageService>(context, listen: false);
+    final isTurkish = lang.isTurkish;
+    final emailController = TextEditingController();
+    final quantityController = TextEditingController(text: '50');
+    bool isSending = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          return AlertDialog(
+            backgroundColor: isDark ? IKASColors.darkSurface : Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.email_rounded, color: Colors.orange, size: 22),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    isTurkish ? 'Üreticiye Bildir' : 'Notify Supplier',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Ürün bilgisi
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.fastfood_rounded, color: Colors.orange, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              meal.name,
+                              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                            Text(
+                              isTurkish
+                                  ? 'Mevcut Stok: ${meal.stock} adet'
+                                  : 'Current Stock: ${meal.stock} units',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: meal.stock <= 5 ? Colors.red : Colors.orange,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Tedarikçi e-posta
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  style: GoogleFonts.poppins(fontSize: 14),
+                  decoration: InputDecoration(
+                    labelText: isTurkish ? 'Tedarikçi E-posta Adresi *' : 'Supplier Email Address *',
+                    labelStyle: GoogleFonts.poppins(fontSize: 13),
+                    prefixIcon: const Icon(Icons.alternate_email_rounded, size: 20),
+                    filled: true,
+                    fillColor: isDark ? IKASColors.darkCard : Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Talep edilen miktar
+                TextField(
+                  controller: quantityController,
+                  keyboardType: TextInputType.number,
+                  style: GoogleFonts.poppins(fontSize: 14),
+                  decoration: InputDecoration(
+                    labelText: isTurkish ? 'Talep Edilen Miktar' : 'Requested Quantity',
+                    labelStyle: GoogleFonts.poppins(fontSize: 13),
+                    prefixIcon: const Icon(Icons.inventory_2_rounded, size: 20),
+                    suffixText: isTurkish ? 'adet' : 'units',
+                    filled: true,
+                    fillColor: isDark ? IKASColors.darkCard : Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(isTurkish ? 'İptal' : 'Cancel', style: GoogleFonts.poppins()),
+              ),
+              ElevatedButton.icon(
+                onPressed: isSending
+                    ? null
+                    : () async {
+                        final email = emailController.text.trim();
+                        final qty = int.tryParse(quantityController.text.trim()) ?? 50;
+
+                        if (email.isEmpty || !email.contains('@')) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(isTurkish
+                                  ? 'Lütfen geçerli bir e-posta adresi girin.'
+                                  : 'Please enter a valid email address.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
+                        setDialogState(() => isSending = true);
+                        try {
+                          await EmailService.sendSupplierRestockEmail(
+                            supplierEmail: email,
+                            mealName: meal.name,
+                            currentStock: meal.stock,
+                            requestedQuantity: qty,
+                            isTurkish: isTurkish,
+                          );
+                          if (context.mounted) {
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(isTurkish
+                                    ? '✅ ${meal.name} için tedarikçiye mail gönderildi!'
+                                    : '✅ Supplier email sent for ${meal.name}!'),
+                                backgroundColor: Colors.green,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          setDialogState(() => isSending = false);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(isTurkish ? 'Mail gönderilemedi: $e' : 'Failed to send email: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                icon: isSending
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.send_rounded, size: 16),
+                label: Text(isSending
+                    ? (isTurkish ? 'Gönderiliyor...' : 'Sending...')
+                    : (isTurkish ? 'Mail Gönder' : 'Send Email')),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange.shade700,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Widget _actionButton(BuildContext context, String label, IconData icon, Color color, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
@@ -2093,6 +2383,7 @@ class _CouponManagementTabState extends State<CouponManagementTab> {
                             controller: _amountController,
                             decoration: const InputDecoration(labelText: 'Flat Discount (₺)'),
                             keyboardType: TextInputType.number,
+                            onTap: () => _amountController.selection = TextSelection(baseOffset: 0, extentOffset: _amountController.text.length),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -2101,6 +2392,7 @@ class _CouponManagementTabState extends State<CouponManagementTab> {
                             controller: _percentageController,
                             decoration: const InputDecoration(labelText: 'Percentage (%)'),
                             keyboardType: TextInputType.number,
+                            onTap: () => _percentageController.selection = TextSelection(baseOffset: 0, extentOffset: _percentageController.text.length),
                           ),
                         ),
                       ],
@@ -2124,7 +2416,26 @@ class _CouponManagementTabState extends State<CouponManagementTab> {
             ),
           ),
           const SizedBox(height: 32),
-          Text('Existing Coupons', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Existing Coupons', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
+              ElevatedButton.icon(
+                onPressed: () async {
+                   final service = Provider.of<CouponService>(context, listen: false);
+                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cleaning coupons...')));
+                   await service.deleteAllCoupons();
+                   await service.seedInitialCoupons();
+                   if (context.mounted) {
+                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coupons Reset Successfully!'), backgroundColor: Colors.green));
+                   }
+                },
+                icon: const Icon(Icons.cleaning_services_rounded, size: 18),
+                label: const Text('Wipe & Reset Coupons'),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
           Consumer<CouponService>(
             builder: (context, service, _) {
@@ -2139,9 +2450,32 @@ class _CouponManagementTabState extends State<CouponManagementTab> {
                     child: ListTile(
                       title: Text(c.code, style: const TextStyle(fontWeight: FontWeight.bold)),
                       subtitle: Text('${c.description}\nExpires: ${c.expiryDate.toString().substring(0, 10)}'),
-                      trailing: Switch(
-                        value: c.isActive,
-                        onChanged: (val) => service.toggleCoupon(c.id, val),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              color: IKASColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: IconButton(
+                              icon: const Icon(Icons.copy_all_rounded, size: 18, color: IKASColors.primary),
+                              tooltip: 'Copy Code',
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(text: c.code));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Code "${c.code}" copied to clipboard!'), behavior: SnackBarBehavior.floating),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Switch(
+                            value: c.isActive,
+                            onChanged: (val) => service.toggleCoupon(c.id, val),
+                            activeColor: IKASColors.primary,
+                          ),
+                        ],
                       ),
                       isThreeLine: true,
                     ),

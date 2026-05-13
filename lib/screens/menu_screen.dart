@@ -15,7 +15,6 @@ import '../services/language_service.dart';
 import '../services/cart_service.dart';
 import '../utils/toast_utils.dart';
 import 'package:flutter/services.dart';
-import 'cart_screen.dart';
 
 // Enhanced menu screen with search, sorting, and advanced filtering
 class MenuScreen extends StatefulWidget {
@@ -1071,25 +1070,6 @@ class _MenuScreenState extends State<MenuScreen> {
           ),
         ),
       ).animate().fadeIn(duration: 400.ms).slideX(begin: 0.1, curve: Curves.easeOutQuad),
-    );
-  }
-
-  Widget _buildDietaryBadge(String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.3), width: 0.5),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 9,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
     );
   }
 

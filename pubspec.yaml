@@ -39,6 +39,7 @@ dependencies:
   confetti: ^0.8.0
   http: ^1.6.0
   flutter_dotenv: ^5.2.1
+  app_links: ^6.4.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

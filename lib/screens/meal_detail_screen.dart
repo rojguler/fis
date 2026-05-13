@@ -18,7 +18,6 @@ import '../utils/toast_utils.dart';
 import 'cart_screen.dart';
 import '../services/language_service.dart';
 import '../services/stock_prediction_service.dart';
-import '../widgets/shimmer_loading.dart';
 
 // Enhanced detailed view of a single meal with share, and related meals
 class MealDetailScreen extends StatelessWidget {

@@ -172,7 +172,7 @@ class LanguageService extends ChangeNotifier {
   String get signUp        => isTurkish ? 'Kayıt Ol' : 'Sign Up';
   String get dontHaveAcc   => isTurkish ? 'Hesabınız yok mu?' : "Don't have an account?";
   String get createAcc     => isTurkish ? 'Hesap Oluştur' : 'Create Account';
-  String get joinIkas      => isTurkish ? 'IKAS\'a Katılın' : 'Join IKAS Super Market';
+  String get joinIkas      => isTurkish ? 'IKAS Fis\'e Katılın' : 'Join IKAS Fis';
   String get fullName      => isTurkish ? 'Ad Soyad' : 'Full Name';
   String get confirmPass   => isTurkish ? 'Şifreyi Onayla' : 'Confirm Password';
   String get adminCode     => isTurkish ? 'Yönetici Kodu (Opsiyonel)' : 'Admin Code (Optional)';
@@ -220,4 +220,31 @@ class LanguageService extends ChangeNotifier {
   String get clearAll => isTurkish ? 'Tümünü Temizle' : 'Clear all';
   String get sortedBy => isTurkish ? 'Sıralama:' : 'Sorted by';
   String get voiceSearchSoon => isTurkish ? 'Sesli arama yakında!' : 'Voice search coming soon!';
+
+  // --- Email & Service specific ---
+  String get emailOrderConfirmationSubject => isTurkish ? 'Siparişiniz Alındı! 📝' : 'Order Received! 📝';
+  String get emailOrderConfirmationBody => isTurkish ? 'Siparişiniz başarıyla alındı ve mutfağa iletildi. Marketten teslim alırken ödeme yapabilirsiniz.' : 'Your order has been received and sent to the kitchen. You can pay when picking up from the market.';
+  String get emailOrderStatusSubject => isTurkish ? 'Sipariş Durumu Güncellendi 🔔' : 'Order Status Updated 🔔';
+  String get emailOrderStatusBodyPrefix => isTurkish ? 'Siparişiniz şu an şu durumda: ' : 'Your order is currently: ';
+  String get emailOrderNo => isTurkish ? 'Sipariş Numarası: ' : 'Order Number: ';
+  String get emailTotalAmount => isTurkish ? 'Toplam Tutar: ' : 'Total Amount: ';
+  String get emailHello => isTurkish ? 'Merhaba' : 'Hello';
+  String get emailThankYou => isTurkish ? 'Bizi tercih ettiğiniz için teşekkürler!' : 'Thank you for choosing us!';
+
+  // --- Auth Errors & Verification ---
+  String get verifyEmailSent => isTurkish ? 'Doğrulama e-postası gönderildi. Lütfen gelen kutunuzu kontrol edin.' : 'Verification email sent. Please check your inbox.';
+  String get emailNotVerified => isTurkish ? 'Lütfen e-postanızı doğrulayın.' : 'Please verify your email address.';
+  String get invalidAdminCode => isTurkish ? 'Geçersiz admin kodu!' : 'Invalid admin code!';
+  String get accountCreatedVerify => isTurkish ? 'Hesap başarıyla oluşturuldu. Giriş yapmak için e-postanızı doğrulayın.' : 'Account created successfully. Please verify your email to log in.';
+
+  // --- Auth Error Mappings ---
+  String get errUserNotFound => isTurkish ? 'Bu e-posta adresiyle kayıtlı bir kullanıcı bulunamadı.' : 'No user found with this email address.';
+  String get errWrongPassword => isTurkish ? 'Hatalı şifre girdiniz. Lütfen tekrar deneyin.' : 'Wrong password. Please try again.';
+  String get errEmailInUse => isTurkish ? 'Bu e-posta adresi zaten başka bir hesap tarafından kullanılıyor.' : 'This email is already in use by another account.';
+  String get errWeakPassword => isTurkish ? 'Şifreniz çok zayıf. Lütfen daha güçlü bir şifre seçin.' : 'The password is too weak. Please choose a stronger password.';
+  String get errInvalidEmail => isTurkish ? 'Geçersiz bir e-posta adresi girdiniz.' : 'The email address is invalid.';
+  String get errUserDisabled => isTurkish ? 'Bu kullanıcı hesabı devre dışı bırakılmış.' : 'This user account has been disabled.';
+  String get errTooManyRequests => isTurkish ? 'Çok fazla deneme yaptınız. Lütfen daha sonra tekrar deneyin.' : 'Too many failed attempts. Please try again later.';
+  String get errOperationNotAllowed => isTurkish ? 'Bu işleme şu an izin verilmiyor.' : 'This operation is not allowed.';
+  String get errDefault => isTurkish ? 'Bir hata oluştu. Lütfen tekrar deneyin.' : 'An error occurred. Please try again.';
 }

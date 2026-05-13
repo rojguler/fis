@@ -10,6 +10,7 @@ import '../services/menu_service.dart';
 import 'cart_screen.dart';
 import '../services/language_service.dart';
 import '../services/order_service.dart';
+import '../services/auth_service.dart';
 import '../widgets/review_dialog.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/services.dart';
@@ -41,10 +42,21 @@ class OrderTrackingScreen extends StatelessWidget {
                 // otherwise fall back to the passed-in order
                 models.Order liveOrder = order;
 
+                final auth = Provider.of<AuthService>(context, listen: false);
                 if (snapshot.hasData && snapshot.data!.exists) {
                   try {
                     final data =
                         snapshot.data!.data() as Map<String, dynamic>;
+                    
+                    // Security check: If not admin and not the owner, deny access
+                    if (!auth.isAdmin && data['userId'] != auth.currentUserId) {
+                      return Scaffold(
+                        body: Center(
+                          child: Text(lang.isTurkish ? 'Erişim Engellendi' : 'Access Denied'),
+                        ),
+                      );
+                    }
+
                     final menuService =
                         Provider.of<MenuService>(context, listen: false);
 
@@ -389,7 +401,7 @@ class _QueueInfoCard extends StatelessWidget {
                     const Icon(Icons.access_time_rounded, size: 18, color: Colors.orange),
                     const SizedBox(width: 4),
                     Text(
-                      '$waitMinutes dk',
+                      '$waitMinutes ${lang.isTurkish ? 'dk' : 'min'}',
                       style: GoogleFonts.poppins(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -760,107 +772,6 @@ class _ItemRow extends StatelessWidget {
   }
 }
 
-// ── Horizontal Stage Tracker ──────────────────────────────────────────────────
-class _HorizontalStageTracker extends StatelessWidget {
-  final models.OrderStatus status;
-  final LanguageService lang;
-  const _HorizontalStageTracker({required this.status, required this.lang});
-
-  @override
-  Widget build(BuildContext context) {
-    final stages = [
-      (models.OrderStatus.pending, Icons.receipt_long_rounded),
-      (models.OrderStatus.preparing, Icons.restaurant_rounded),
-      (models.OrderStatus.ready, Icons.check_circle_rounded),
-      (models.OrderStatus.completed, Icons.done_all_rounded),
-    ];
-
-    int currentIdx = stages.indexWhere((s) => s.$1 == status);
-    if (status == models.OrderStatus.cancelled) currentIdx = -1;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark 
-            ? IKASColors.darkCard 
-            : Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: List.generate(stages.length, (i) {
-              final isActive = i <= currentIdx;
-              final isCurrent = i == currentIdx;
-              final isLast = i == stages.length - 1;
-
-              return Expanded(
-                child: Row(
-                  children: [
-                    // Dot
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 600),
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: isActive ? IKASColors.primary : Colors.grey.shade300,
-                              shape: BoxShape.circle,
-                              boxShadow: isCurrent ? [
-                                BoxShadow(
-                                  color: IKASColors.primary.withOpacity(0.3),
-                                  blurRadius: 10,
-                                  spreadRadius: 2,
-                                )
-                              ] : [],
-                            ),
-                            child: Icon(
-                              stages[i].$2,
-                              size: 14,
-                              color: isActive ? Colors.white : Colors.grey.shade500,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            lang.statusLabel(stages[i].$1),
-                            style: GoogleFonts.poppins(
-                              fontSize: 9,
-                              fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
-                              color: isActive ? IKASColors.primary : Colors.grey.shade500,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Line
-                    if (!isLast)
-                      Container(
-                        width: 20,
-                        height: 3,
-                        margin: const EdgeInsets.only(bottom: 24),
-                        decoration: BoxDecoration(
-                          color: i < currentIdx ? IKASColors.primary : Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                  ],
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-}
 // ── Pickup Code Section ────────────────────────────────────────────────────────
 class _PickupCodeSection extends StatelessWidget {
   final String orderId;

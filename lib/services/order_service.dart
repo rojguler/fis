@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/order.dart' as models;
 import '../models/cart_item.dart';
-import '../models/meal.dart';
 import '../services/menu_service.dart';
 import '../services/email_service.dart';
 import '../main.dart'; // To access globalMessengerKey and IKASColors
@@ -28,6 +27,13 @@ class OrderService extends ChangeNotifier {
   OrderService(this._menuService);
 
   List<models.Order> get orders => _orders;
+  
+  /// Get only the orders belonging to the currently logged in user
+  List<models.Order> get userOrders {
+    if (_currentUserId == null) return _orders; // Fallback to all if no ID set (e.g. admin or test)
+    return _orders.where((o) => o.userId == _currentUserId).toList();
+  }
+  
   bool get isLoading => _isLoading;
 
   /// Get stock predictions for all meals
@@ -259,6 +265,8 @@ class OrderService extends ChangeNotifier {
     required String userId,
     required List<CartItem> items,
     String? notes,
+    double? totalPrice,
+    double? discountAmount,
   }) async {
     if (items.isEmpty) return {'success': false, 'error': 'Cart is empty'};
 
@@ -277,7 +285,8 @@ class OrderService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final totalPrice = items.fold(0.0, (sum, item) => sum + item.totalPrice);
+      final double calculatedTotal = items.fold<double>(0.0, (double sum, item) => sum + item.totalPrice);
+      final double finalTotalPrice = totalPrice ?? calculatedTotal;
 
       // ── Generate a short order number (daily counter) ──────────────────────
       final today = DateTime.now();
@@ -301,7 +310,8 @@ class OrderService extends ChangeNotifier {
       final orderData = {
         'userId': userId,
         'items': items.map((item) => item.toMap()).toList(),
-        'totalPrice': totalPrice,
+        'totalPrice': finalTotalPrice,
+        'discountAmount': discountAmount ?? 0.0,
         'createdAt': Timestamp.now(),
         'status': models.OrderStatus.pending.toString().split('.').last,
         'notes': notes,
@@ -317,7 +327,7 @@ class OrderService extends ChangeNotifier {
           id: 'mock_order_${DateTime.now().millisecondsSinceEpoch}',
           userId: userId,
           items: items.toList(),
-          totalPrice: totalPrice,
+          totalPrice: finalTotalPrice,
           createdAt: DateTime.now(),
           status: models.OrderStatus.pending,
           notes: notes,
@@ -336,7 +346,7 @@ class OrderService extends ChangeNotifier {
         id: docRef.id,
         userId: userId,
         items: items.toList(),
-        totalPrice: totalPrice,
+        totalPrice: finalTotalPrice,
         createdAt: DateTime.now(),
         status: models.OrderStatus.pending,
         notes: notes,
@@ -352,6 +362,17 @@ class OrderService extends ChangeNotifier {
 
       _isLoading = false;
       notifyListeners();
+
+      // Trigger email notification with user's language
+      try {
+        final userDoc = await _firestore.collection('users').doc(userId).get();
+        final userLang = userDoc.data()?['language'] ?? 'tr';
+        EmailService.sendOrderConfirmationEmail(createdOrder, isTurkish: userLang == 'tr')
+            .catchError((e) => debugPrint("Email confirmation error: $e"));
+      } catch (e) {
+        debugPrint("Error triggering confirmation email: $e");
+      }
+
       return {'success': true, 'order': createdOrder};
     } catch (e) {
       debugPrint('Error creating order: $e');
@@ -434,22 +455,27 @@ class OrderService extends ChangeNotifier {
       // Siparişin sahibine e-posta gönder (asenkron olarak)
       try {
         final userDoc = await _firestore.collection('users').doc(order.userId).get();
-        if (userDoc.exists && userDoc.data()!.containsKey('email')) {
-          final userEmail = userDoc.data()!['email'] as String;
-          if (userEmail.isNotEmpty) {
-            
-            // Basitçe durumu Türkçeye çevir
-            String statusT = status.toString().split('.').last;
-            if (status == models.OrderStatus.preparing) statusT = "Hazırlanıyor 👨‍🍳";
-            else if (status == models.OrderStatus.ready) statusT = "Hazır! Afiyet Olsun 🍽️";
-            else if (status == models.OrderStatus.completed) statusT = "Tamamlandı ✅";
-            else if (status == models.OrderStatus.cancelled) statusT = "İptal Edildi ❌";
+        if (userDoc.exists) {
+          final userData = userDoc.data()!;
+          final userEmail = userData['email'] as String?;
+          final userLang = userData['language'] as String? ?? 'tr';
+          final isTr = userLang == 'tr';
+
+          if (userEmail != null && userEmail.isNotEmpty) {
+            String statusText;
+            switch (status) {
+              case models.OrderStatus.preparing: statusText = isTr ? "Hazırlanıyor 👨‍🍳" : "Preparing 👨‍🍳"; break;
+              case models.OrderStatus.ready: statusText = isTr ? "Hazır! Afiyet Olsun 🍽️" : "Ready! Enjoy 🍽️"; break;
+              case models.OrderStatus.completed: statusText = isTr ? "Tamamlandı ✅" : "Completed ✅"; break;
+              case models.OrderStatus.cancelled: statusText = isTr ? "İptal Edildi ❌" : "Cancelled ❌"; break;
+              default: statusText = status.toString().split('.').last;
+            }
 
             EmailService.sendOrderStatusEmail(
               userEmail: userEmail,
               orderId: order.id,
-              newStatus: status.toString(),
-              statusText: statusT,
+              statusText: statusText,
+              isTurkish: isTr,
             ).catchError((e) => debugPrint('Sipariş mail hatası: \$e'));
           }
         }
