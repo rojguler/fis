@@ -14,6 +14,7 @@ class Meal {
   final String category; // e.g., 'main', 'dessert', 'drink', 'salad'
   final bool isVegan;
   final bool isGlutenFree;
+  final String supplierEmail;
 
   Meal({
     required this.id,
@@ -30,6 +31,7 @@ class Meal {
     required this.category,
     this.isVegan = false,
     this.isGlutenFree = false,
+    this.supplierEmail = '',
   });
 
   // Convert from Firestore document
@@ -51,6 +53,7 @@ class Meal {
       category: data['category'] ?? 'main',
       isVegan: data['isVegan'] ?? false,
       isGlutenFree: data['isGlutenFree'] ?? false,
+      supplierEmail: data['supplierEmail'] ?? '',
     );
   }
 
@@ -70,6 +73,7 @@ class Meal {
       'category': category,
       'isVegan': isVegan,
       'isGlutenFree': isGlutenFree,
+      'supplierEmail': supplierEmail,
     };
   }
 

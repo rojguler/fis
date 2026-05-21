@@ -28,7 +28,7 @@ class ProfileScreen extends StatelessWidget {
           if (authService.isAuthenticated) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               Provider.of<OrderService>(context, listen: false)
-                  .fetchUserOrders(authService.currentUserId);
+                  .listenToUserOrders(authService.currentUserId);
             });
           }
           final displayName = authService.currentUserName.isNotEmpty
@@ -371,9 +371,7 @@ class ProfileScreen extends StatelessWidget {
                         iconBg: const Color(0xFFFFF3E0),
                         iconColor: Colors.orange,
                         isDark: isDark,
-                        onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(lang.comingSoon)),
-                        ),
+                        onTap: () => _showHelpDialog(context, lang),
                       ),
                       const SizedBox(height: 10),
                       _menuItem(
@@ -965,6 +963,87 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  void _showHelpDialog(BuildContext context, LanguageService lang) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? IKASColors.darkSurface : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.help_outline_rounded, color: Colors.orange, size: 22),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              lang.helpSupport,
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 16,
+                  color: isDark ? Colors.white : IKASColors.textDark),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _helpRow(Icons.email_outlined, lang.isTurkish ? 'E-posta' : 'Email',
+                'roj.gulerr@gmail.com', Colors.blue, isDark),
+            const SizedBox(height: 12),
+            _helpRow(Icons.schedule_rounded, lang.isTurkish ? 'Çalışma Saatleri' : 'Working Hours',
+                lang.isTurkish ? 'Pzt-Paz: 09:00 - 23:00' : 'Mon-Sun: 09:00 - 23:00',
+                Colors.green, isDark),
+            const SizedBox(height: 12),
+            _helpRow(Icons.info_outline_rounded, lang.isTurkish ? 'Versiyon' : 'Version',
+                'iKAS Fis v1.0.0', IKASColors.primary, isDark),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(lang.close, style: GoogleFonts.poppins(color: IKASColors.primary, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _helpRow(IconData icon, String label, String value, Color color, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.15)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: GoogleFonts.poppins(
+                        fontSize: 11, color: isDark ? Colors.white54 : IKASColors.textLight,
+                        fontWeight: FontWeight.w500)),
+                Text(value,
+                    style: GoogleFonts.poppins(
+                        fontSize: 13, fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : IKASColors.textDark)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showAboutDialog(BuildContext context, LanguageService lang) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
@@ -991,6 +1070,11 @@ class ProfileScreen extends StatelessWidget {
               'IKAS Super Market app — browse products, order meals, and manage your account easily.',
               style:
                   GoogleFonts.poppins(fontSize: 13, color: isDark ? Colors.white70 : IKASColors.textMid),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              lang.isTurkish ? 'Çalışma Saatleri: Pzt-Paz 09:00 - 23:00' : 'Working Hours: Mon-Sun 09:00 - 23:00',
+              style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.green),
             ),
           ],
         ),

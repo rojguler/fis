@@ -55,23 +55,7 @@ class CouponScreen extends StatelessWidget {
                 }).toList(),
               ],
               
-              if (inactiveCoupons.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                Text(
-                  lang.isTurkish ? 'Pasif Kuponlar' : 'Inactive Coupons',
-                  style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.grey),
-                ),
-                const SizedBox(height: 12),
-                ...inactiveCoupons.map((c) {
-                  final discount = c.discountPercentage > 0 
-                      ? '%${(c.discountPercentage * 100).toInt()} ${lang.isTurkish ? "İNDİRİM" : "OFF"}'
-                      : '₺${c.discountAmount.toStringAsFixed(2)} ${lang.isTurkish ? "İNDİRİM" : "OFF"}';
-                  return Opacity(
-                    opacity: 0.5,
-                    child: _couponCard(isDark, lang, c.code, discount, c.description, lang.isTurkish ? 'Süresi Dolmuş' : 'Expired or Inactive', Colors.grey),
-                  );
-                }).toList(),
-              ],
+              // Inactive coupons are no longer visible to users
             ],
           );
         }

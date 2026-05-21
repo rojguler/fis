@@ -990,18 +990,6 @@ class _MenuScreenState extends State<MenuScreen> {
                               ),
                             ),
                           ),
-                          if (!meal.isAvailable)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                lang.outOfStock,
-                                style: GoogleFonts.poppins(fontSize: 9, color: Colors.red, fontWeight: FontWeight.bold),
-                              ),
-                            ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -1024,6 +1012,18 @@ class _MenuScreenState extends State<MenuScreen> {
                           color: isDark ? Colors.white60 : IKASColors.textLight,
                         ),
                       ),
+                      if (!meal.isAvailable)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            lang.outOfStock,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: Colors.red,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1039,9 +1039,13 @@ class _MenuScreenState extends State<MenuScreen> {
                           Consumer<CartService>(
                             builder: (context, cart, _) => GestureDetector(
                               onTap: () {
-                                HapticFeedback.mediumImpact();
-                                cart.addItem(meal);
-                                ToastUtils.showTopToast(context, lang.itemAddedCart);
+                                if (meal.isAvailable && meal.stock > 0) {
+                                  HapticFeedback.mediumImpact();
+                                  cart.addItem(meal);
+                                  ToastUtils.showTopToast(context, lang.itemAddedCart);
+                                } else {
+                                  ToastUtils.showTopToast(context, lang.outOfStock);
+                                }
                               },
                               child: Container(
                                 padding: const EdgeInsets.all(8),

@@ -14,6 +14,7 @@ import '../services/language_service.dart';
 import '../services/seed_service.dart';
 import '../services/coupon_service.dart';
 import '../services/email_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Admin screen for managing daily menus (add, update, delete)
 class AdminScreen extends StatefulWidget {
@@ -39,21 +40,6 @@ class _AdminScreenState extends State<AdminScreen> {
         backgroundColor: isDark ? IKASColors.darkSurface : Colors.white,
         foregroundColor: isDark ? Colors.white : IKASColors.textDark,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: () {
-              Provider.of<MenuService>(context, listen: false).fetchAllMeals();
-              Provider.of<MenuService>(context, listen: false).fetchTodayMenu();
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.cleaning_services_rounded, color: Colors.redAccent),
-            tooltip: 'Reset & Fix Localization',
-            onPressed: () => _showResetDialog(context),
-          ),
-        ],
       ),
       body: isWide 
         ? Row(
@@ -559,6 +545,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
       text: meal?.allergens.join(', ') ?? '',
     );
     final imageUrlController = TextEditingController(text: meal?.imageUrl ?? '');
+    final supplierEmailController = TextEditingController(text: meal?.supplierEmail ?? '');
     
     String selectedCategory = meal?.category ?? 'main';
     bool isUploading = false;
@@ -892,6 +879,12 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                           onChanged: (_) => setDialogState(() {}),
                           decoration: _inputDecoration(context, 'Or Paste Image URL', Icons.link),
                         ),
+                        const SizedBox(height: 16),
+                        _buildSectionTitle(context, 'Supplier Info', Icons.business_outlined),
+                        TextField(
+                          controller: supplierEmailController,
+                          decoration: _inputDecoration(context, 'Supplier Email', Icons.email_outlined),
+                        ),
                         const SizedBox(height: 24),
                       ],
                     ),
@@ -943,6 +936,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                                 fatController.text,
                                 allergensController.text,
                                 imageUrlController.text,
+                                supplierEmailController.text,
                               );
                             },
                             style: ElevatedButton.styleFrom(
@@ -989,6 +983,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
     String fatStr,
     String allergensStr,
     String imageUrl,
+    String supplierEmail,
   ) async {
     final isTurkish = Provider.of<LanguageService>(context, listen: false).isTurkish;
     // Fallbacks for missing localized texts
@@ -1061,6 +1056,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
           },
           allergens: allergens,
           imageUrl: imageUrl,
+          supplierEmail: supplierEmail,
         );
       } else {
         // Update existing meal
@@ -1081,6 +1077,7 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
           },
           allergens: allergens,
           imageUrl: imageUrl,
+          supplierEmail: supplierEmail,
         );
       }
 
@@ -1750,6 +1747,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = Provider.of<LanguageService>(context);
 
     return Consumer2<OrderService, MenuService>(
       builder: (context, orderService, menuService, child) {
@@ -1758,24 +1756,15 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
         }
 
         final orders = orderService.orders;
-        double totalRevenue = 0;
-        int totalItemsSold = 0;
-        Map<String, int> mealSales = {};
         
-        for (var order in orders) {
-          totalRevenue += order.totalPrice;
-          for(var item in order.items) {
-            totalItemsSold += item.quantity;
-            mealSales[item.meal.name] = (mealSales[item.meal.name] ?? 0) + item.quantity;
-          }
-        }
-
-        String mostPopularItem = "Bulunamadı";
-        if (mealSales.isNotEmpty) {
-           var sorted = mealSales.entries.toList()..sort((a,b) => b.value.compareTo(a.value));
-           mostPopularItem = sorted.first.key;
-        }
-
+        // Günlük istatistikler - sadece bugünkü siparisler
+        final dailyStats = orderService.getDailyStats();
+        final double totalRevenue = dailyStats['revenue'] as double;
+        final int totalItemsSold = (dailyStats['completedOrders'] as int) + (dailyStats['preparingOrders'] as int) + (dailyStats['pendingOrders'] as int);
+        final topMeals = dailyStats['topMeals'] as List;
+        String mostPopularItem = topMeals.isNotEmpty ? topMeals.first.key : (lang.isTurkish ? "Bugün sipariş yok" : "No orders today");
+        final int todayOrderCount = dailyStats['totalOrders'] as int;
+        
         final predictions = orderService.stockPredictions;
         final lowStockMeals = menuService.meals.where((m) => m.stock <= 5).toList();
         final criticalPredictions = menuService.meals.where((m) {
@@ -1795,170 +1784,229 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Dashboard Overview',
-                  style: GoogleFonts.poppins(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : IKASColors.textDark,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        lang.isTurkish ? 'Bugünkü Dashboard' : 'Today\'s Dashboard',
+                        style: GoogleFonts.poppins(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : IKASColors.textDark,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: IKASColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                        style: GoogleFonts.poppins(fontSize: 12, color: IKASColors.primary, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
                 
                 if (lowStockMeals.isNotEmpty || criticalPredictions.isNotEmpty)
                   Container(
                     margin: const EdgeInsets.only(bottom: 24),
-                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: isDark 
-                          ? [Colors.red.withOpacity(0.3), Colors.orange.withOpacity(0.2)]
-                          : [Colors.red.shade50, Colors.orange.shade50],
-                      ),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.analytics_rounded, color: Colors.red, size: 28),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Akıllı Stok Analizi (Smart Stock Analysis)',
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.red[300] : Colors.red[700],
-                                fontSize: 18,
-                              ),
-                            ),
-                          ],
+                      border: Border.all(color: Colors.red.shade300, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.12),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
                         ),
-                        const SizedBox(height: 16),
-                        // Combine both low stock and critical predictions for a unified restock list
-                        ...[...lowStockMeals, ...criticalPredictions].toSet().map((m) {
-                          final isCritical = criticalPredictions.contains(m);
-                          final dur = isCritical ? predictions[m.id] : null;
-                          
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.all(12),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Bildirim Başlığı
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                             decoration: BoxDecoration(
-                              color: isDark ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.5),
-                              borderRadius: BorderRadius.circular(12),
+                              gradient: LinearGradient(
+                                colors: [Colors.red.shade700, Colors.orange.shade600],
+                              ),
                             ),
                             child: Row(
                               children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.notifications_active_rounded, color: Colors.white, size: 22),
+                                ),
+                                const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        m.name,
+                                        '⚠️ Kritik Stok Uyardı!',
                                         style: GoogleFonts.poppins(
+                                          color: Colors.white,
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                          color: isDark ? Colors.white : IKASColors.textDark,
+                                          fontSize: 16,
                                         ),
                                       ),
                                       Text(
-                                        isCritical 
-                                          ? 'Tahmin: ~${dur!.inMinutes} dk içinde bitebilir'
-                                          : 'Kritik Stok: ${m.stock} adet kaldı',
+                                        '${[...lowStockMeals, ...criticalPredictions].toSet().length} ürün stok kritik seviyede',
                                         style: GoogleFonts.poppins(
+                                          color: Colors.white.withOpacity(0.85),
                                           fontSize: 12,
-                                          color: isCritical ? Colors.orange : Colors.red,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    ElevatedButton.icon(
-                                      onPressed: () async {
-                                        try {
-                                          await menuService.quickRestock(m.id, 20);
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('${m.name} stok +20 eklendi'), backgroundColor: Colors.green)
-                                            );
-                                          }
-                                        } catch (e) {
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red)
-                                            );
-                                          }
-                                        }
-                                      },
-                                      icon: const Icon(Icons.add, size: 14),
-                                      label: const Text('20'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green.shade600,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                        minimumSize: Size.zero,
-                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                      ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    '${[...lowStockMeals, ...criticalPredictions].toSet().length}',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.red.shade700,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
                                     ),
-                                    const SizedBox(width: 8),
-                                    ElevatedButton.icon(
-                                      onPressed: () async {
-                                        try {
-                                          await menuService.quickRestock(m.id, 50);
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('${m.name} stok +50 eklendi'), backgroundColor: Colors.blue)
-                                            );
-                                          }
-                                        } catch (e) {
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red)
-                                            );
-                                          }
-                                        }
-                                      },
-                                      icon: const Icon(Icons.add, size: 14),
-                                      label: const Text('50'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.blue.shade600,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                        minimumSize: Size.zero,
-                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    ElevatedButton.icon(
-                                      onPressed: () => _showSupplierEmailDialog(context, m),
-                                      icon: const Icon(Icons.email_rounded, size: 14),
-                                      label: const Text('Üretici'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.orange.shade700,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                        minimumSize: Size.zero,
-                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                      ),
-                                    ),
-                                  ],
+                                  ),
                                 ),
                               ],
                             ),
-                          );
-                        }).toList(),
-                      ],
+                          ),
+                          // Stok kart listesi
+                          Container(
+                            color: isDark ? IKASColors.darkCard : Colors.red.shade50,
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: [...lowStockMeals, ...criticalPredictions].toSet().map((m) {
+                                final isCritical = criticalPredictions.contains(m);
+                                final dur = isCritical ? predictions[m.id] : null;
+                                final hasSupplierEmail = m.supplierEmail.isNotEmpty;
+                                
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: isCritical ? Colors.orange.withOpacity(0.4) : Colors.red.withOpacity(0.2),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.04),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: (isCritical ? Colors.orange : Colors.red).withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Icon(
+                                              isCritical ? Icons.timer_rounded : Icons.warning_rounded,
+                                              color: isCritical ? Colors.orange : Colors.red,
+                                              size: 16,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  m.name,
+                                                  style: GoogleFonts.poppins(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 14,
+                                                    color: isDark ? Colors.white : IKASColors.textDark,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  isCritical
+                                                      ? 'Tahmin: ~${dur!.inMinutes} dk içinde bitebilir'
+                                                      : 'Kritik Stok: ${m.stock} adet kaldı',
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: 12,
+                                                    color: isCritical ? Colors.orange : Colors.red,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          // Hızlı stok ekle butonları
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              _quickStockBtn(context, m, menuService, 20, Colors.green.shade600),
+                                              const SizedBox(width: 6),
+                                              _quickStockBtn(context, m, menuService, 50, Colors.blue.shade600),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      // Tedarikçiye Mail Gönder Butonu (tam genişlik)
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton.icon(
+                                          onPressed: () => _showQuickSupplierConfirm(context, m),
+                                          icon: const Icon(Icons.send_rounded, size: 16),
+                                          label: Text(
+                                            hasSupplierEmail
+                                                ? (lang.isTurkish ? '📧 Tedarikçiye Mail Gönder (${m.supplierEmail})' : '📧 Send Supplier Email (${m.supplierEmail})')
+                                                : (lang.isTurkish ? '📧 Tedarikçiye Mail Gönder' : '📧 Send Supplier Email'),
+                                            style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: hasSupplierEmail
+                                                ? Colors.orange.shade700
+                                                : Colors.grey.shade400,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
 
-                // Top Metrics Row
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
@@ -1966,22 +2014,22 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                     children: [
                       SizedBox(
                         width: 240,
-                        child: _metricCard('Bugünkü Kazanç', '₺${totalRevenue.toStringAsFixed(2)}', Icons.attach_money_rounded, Colors.green, isDark),
+                        child: _metricCard(lang.isTurkish ? 'Bugünkü Kazanç' : 'Today\'s Revenue', '₺${totalRevenue.toStringAsFixed(2)}', Icons.attach_money_rounded, Colors.green, isDark),
                       ),
                       const SizedBox(width: 16),
                       SizedBox(
                         width: 200,
-                        child: _metricCard('Toplam Sipariş', '${orders.length}', Icons.shopping_bag_rounded, Colors.blue, isDark),
+                        child: _metricCard(lang.isTurkish ? 'Bugünkü Sipariş' : 'Today\'s Orders', '$todayOrderCount', Icons.shopping_bag_rounded, Colors.blue, isDark),
                       ),
                       const SizedBox(width: 16),
                       SizedBox(
                         width: 220,
-                        child: _metricCard('En Popüler Ürün', mostPopularItem, Icons.star_rounded, Colors.amber, isDark),
+                        child: _metricCard(lang.isTurkish ? 'En Popüler Ürün' : 'Most Popular', mostPopularItem, Icons.star_rounded, Colors.amber, isDark),
                       ),
                       const SizedBox(width: 16),
                       SizedBox(
                         width: 200,
-                        child: _metricCard('Satılan Ürün', '$totalItemsSold', Icons.fastfood_rounded, Colors.orange, isDark),
+                        child: _metricCard(lang.isTurkish ? 'Tüm Sipariş' : 'Total Orders', '${orders.length}', Icons.receipt_long_rounded, Colors.orange, isDark),
                       ),
                     ],
                   ),
@@ -2082,7 +2130,10 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
   void _showSupplierEmailDialog(BuildContext context, meal) {
     final lang = Provider.of<LanguageService>(context, listen: false);
     final isTurkish = lang.isTurkish;
-    final emailController = TextEditingController();
+    // Admin e-posta sabit olarak kayıtlı
+    const adminEmail = 'roj.gulerr@gmail.com';
+    // Tedarikçi e-postası otomatik doldurulur
+    final emailController = TextEditingController(text: meal.supplierEmail ?? '');
     final quantityController = TextEditingController(text: '50');
     bool isSending = false;
 
@@ -2153,6 +2204,30 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                // Admin e-posta bilgisi (sabit gösterge)
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: IKASColors.primary.withOpacity(0.07),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: IKASColors.primary.withOpacity(0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.admin_panel_settings_rounded, color: IKASColors.primary, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          isTurkish
+                              ? 'Admin: $adminEmail'
+                              : 'Admin: $adminEmail',
+                          style: GoogleFonts.poppins(fontSize: 11, color: IKASColors.primary, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
                 // Tedarikçi e-posta
                 TextField(
                   controller: emailController,
@@ -2226,6 +2301,15 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                             requestedQuantity: qty,
                             isTurkish: isTurkish,
                           );
+                          // Ayrıca admin maile CC olarak bildir
+                          await EmailService.sendAdminStockAlertEmail(
+                            adminEmail: adminEmail,
+                            supplierEmail: email,
+                            mealName: meal.name,
+                            currentStock: meal.stock,
+                            requestedQuantity: qty,
+                            isTurkish: isTurkish,
+                          );
                           if (context.mounted) {
                             Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -2261,6 +2345,233 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                 label: Text(isSending
                     ? (isTurkish ? 'Gönderiliyor...' : 'Sending...')
                     : (isTurkish ? 'Mail Gönder' : 'Send Email')),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange.shade700,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _quickStockBtn(BuildContext context, meal, MenuService menuService, int amount, Color color) {
+    return ElevatedButton(
+      onPressed: () async {
+        try {
+          await menuService.quickRestock(meal.id, amount);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('${meal.name} stok +$amount eklendi'), backgroundColor: color),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red),
+            );
+          }
+        }
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      child: Text('+$amount', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  /// Stok uyarısı: tek tıkla onay + otomatik tedarikçi maili
+  void _showQuickSupplierConfirm(BuildContext context, meal) {
+    const adminEmail = 'roj.gulerr@gmail.com';
+    final lang = Provider.of<LanguageService>(context, listen: false);
+    final isTurkish = lang.isTurkish;
+    final hasEmail = meal.supplierEmail != null && (meal.supplierEmail as String).isNotEmpty;
+    final quantityController = TextEditingController(text: '50');
+
+    if (!hasEmail) {
+      // Email kayıtlı değilse direkt dialog'u aç
+      _showSupplierEmailDialog(context, meal);
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          bool isSending = false;
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          return AlertDialog(
+            backgroundColor: isDark ? IKASColors.darkSurface : Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.send_rounded, color: Colors.orange, size: 22),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    isTurkish ? 'Tedarikçiye Mail Gönder' : 'Send Supplier Email',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.fastfood_rounded, color: Colors.orange, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              meal.name,
+                              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        isTurkish
+                            ? 'Mevcut Stok: ${meal.stock} adet'
+                            : 'Current Stock: ${meal.stock} units',
+                        style: GoogleFonts.poppins(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isTurkish
+                            ? 'Tedarikçi: ${meal.supplierEmail}'
+                            : 'Supplier: ${meal.supplierEmail}',
+                        style: GoogleFonts.poppins(fontSize: 11, color: Colors.orange.shade800),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Admin bilgisi
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: IKASColors.primary.withOpacity(0.07),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: IKASColors.primary.withOpacity(0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.admin_panel_settings_rounded, color: IKASColors.primary, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Admin kopyası: $adminEmail',
+                          style: GoogleFonts.poppins(fontSize: 11, color: IKASColors.primary, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: quantityController,
+                  keyboardType: TextInputType.number,
+                  style: GoogleFonts.poppins(fontSize: 14),
+                  decoration: InputDecoration(
+                    labelText: isTurkish ? 'Talep Edilen Miktar' : 'Requested Quantity',
+                    labelStyle: GoogleFonts.poppins(fontSize: 13),
+                    prefixIcon: const Icon(Icons.inventory_2_rounded, size: 20),
+                    suffixText: isTurkish ? 'adet' : 'units',
+                    filled: true,
+                    fillColor: isDark ? IKASColors.darkCard : Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(isTurkish ? 'İptal' : 'Cancel', style: GoogleFonts.poppins()),
+              ),
+              ElevatedButton.icon(
+                onPressed: isSending
+                    ? null
+                    : () async {
+                        final qty = int.tryParse(quantityController.text.trim()) ?? 50;
+                        setDialogState(() => isSending = true);
+                        try {
+                          await EmailService.sendSupplierRestockEmail(
+                            supplierEmail: meal.supplierEmail,
+                            mealName: meal.name,
+                            currentStock: meal.stock,
+                            requestedQuantity: qty,
+                            isTurkish: isTurkish,
+                          );
+                          await EmailService.sendAdminStockAlertEmail(
+                            adminEmail: adminEmail,
+                            supplierEmail: meal.supplierEmail,
+                            mealName: meal.name,
+                            currentStock: meal.stock,
+                            requestedQuantity: qty,
+                            isTurkish: isTurkish,
+                          );
+                          if (context.mounted) {
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(isTurkish
+                                    ? '✅ ${meal.name} için tedarikçiye mail gönderildi!'
+                                    : '✅ Supplier email sent for ${meal.name}!'),
+                                backgroundColor: Colors.green,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          setDialogState(() => isSending = false);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Mail gönderilemedi: $e'), backgroundColor: Colors.red),
+                            );
+                          }
+                        }
+                      },
+                icon: isSending
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.send_rounded, size: 16),
+                label: Text(isSending
+                    ? (isTurkish ? 'Gönderiliyor...' : 'Sending...')
+                    : (isTurkish ? '📧 Hemen Gönder' : '📧 Send Now')),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange.shade700,
                   foregroundColor: Colors.white,
@@ -2356,12 +2667,14 @@ class _CouponManagementTabState extends State<CouponManagementTab> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = Provider.of<LanguageService>(context);
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Create New Coupon', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(lang.isTurkish ? 'Yeni Kupon Oluştur' : 'Create New Coupon', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           Card(
             child: Padding(
@@ -2372,8 +2685,8 @@ class _CouponManagementTabState extends State<CouponManagementTab> {
                   children: [
                     TextFormField(
                       controller: _codeController,
-                      decoration: const InputDecoration(labelText: 'Coupon Code (e.g. SUMMER20)'),
-                      validator: (v) => v!.isEmpty ? 'Required' : null,
+                      decoration: InputDecoration(labelText: lang.isTurkish ? 'Kupon Kodu (örn. YAZ20)' : 'Coupon Code (e.g. SUMMER20)'),
+                      validator: (v) => v!.isEmpty ? (lang.isTurkish ? 'Zorunlu alan' : 'Required') : null,
                     ),
                     const SizedBox(height: 12),
                     Row(
@@ -2381,7 +2694,7 @@ class _CouponManagementTabState extends State<CouponManagementTab> {
                         Expanded(
                           child: TextFormField(
                             controller: _amountController,
-                            decoration: const InputDecoration(labelText: 'Flat Discount (₺)'),
+                            decoration: InputDecoration(labelText: lang.isTurkish ? 'Sabit İndirim (₺)' : 'Flat Discount (₺)'),
                             keyboardType: TextInputType.number,
                             onTap: () => _amountController.selection = TextSelection(baseOffset: 0, extentOffset: _amountController.text.length),
                           ),
@@ -2390,7 +2703,7 @@ class _CouponManagementTabState extends State<CouponManagementTab> {
                         Expanded(
                           child: TextFormField(
                             controller: _percentageController,
-                            decoration: const InputDecoration(labelText: 'Percentage (%)'),
+                            decoration: InputDecoration(labelText: lang.isTurkish ? 'Yüzde (%)' : 'Percentage (%)'),
                             keyboardType: TextInputType.number,
                             onTap: () => _percentageController.selection = TextSelection(baseOffset: 0, extentOffset: _percentageController.text.length),
                           ),
@@ -2400,14 +2713,14 @@ class _CouponManagementTabState extends State<CouponManagementTab> {
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _descController,
-                      decoration: const InputDecoration(labelText: 'Description'),
+                      decoration: InputDecoration(labelText: lang.isTurkish ? 'Açıklama' : 'Description'),
                     ),
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () => _createCoupon(context),
-                        child: const Text('Create Coupon'),
+                        child: Text(lang.isTurkish ? 'Kupon Oluştur' : 'Create Coupon'),
                       ),
                     ),
                   ],
@@ -2419,65 +2732,69 @@ class _CouponManagementTabState extends State<CouponManagementTab> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Existing Coupons', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
-              ElevatedButton.icon(
-                onPressed: () async {
-                   final service = Provider.of<CouponService>(context, listen: false);
-                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cleaning coupons...')));
-                   await service.deleteAllCoupons();
-                   await service.seedInitialCoupons();
-                   if (context.mounted) {
-                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coupons Reset Successfully!'), backgroundColor: Colors.green));
-                   }
-                },
-                icon: const Icon(Icons.cleaning_services_rounded, size: 18),
-                label: const Text('Wipe & Reset Coupons'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
-              ),
+              Text(lang.isTurkish ? 'Mevcut Kuponlar' : 'Existing Coupons', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 16),
           Consumer<CouponService>(
             builder: (context, service, _) {
-              if (service.coupons.isEmpty) return const Text('No coupons created yet.');
+              if (service.coupons.isEmpty) return Text(lang.isTurkish ? 'Henüz kupon oluşturulmadı.' : 'No coupons created yet.');
               return ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: service.coupons.length,
                 itemBuilder: (context, index) {
                   final c = service.coupons[index];
+                  final isExpired = c.expiryDate.isBefore(DateTime.now());
+                  
                   return Card(
-                    child: ListTile(
-                      title: Text(c.code, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('${c.description}\nExpires: ${c.expiryDate.toString().substring(0, 10)}'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: IKASColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: IconButton(
-                              icon: const Icon(Icons.copy_all_rounded, size: 18, color: IKASColors.primary),
-                              tooltip: 'Copy Code',
-                              onPressed: () {
-                                Clipboard.setData(ClipboardData(text: c.code));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Code "${c.code}" copied to clipboard!'), behavior: SnackBarBehavior.floating),
-                                );
-                              },
-                            ),
+                    child: Column(
+                      children: [
+                        ListTile(
+                          title: Row(
+                            children: [
+                              Text(c.code, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              const SizedBox(width: 8),
+                              if (isExpired)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(color: Colors.red.shade100, borderRadius: BorderRadius.circular(4)),
+                                  child: Text(lang.isTurkish ? 'SÜRESİ DOLDU' : 'EXPIRED', style: const TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold)),
+                                ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          Switch(
-                            value: c.isActive,
-                            onChanged: (val) => service.toggleCoupon(c.id, val),
-                            activeColor: IKASColors.primary,
+                          subtitle: Text('${c.description}\n${lang.isTurkish ? "Son Kullanım" : "Expires"}: ${c.expiryDate.toString().substring(0, 10)}'),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
+                                onPressed: () => _showEditCouponDialog(context, c),
+                              ),
+                              Switch(
+                                value: c.isActive,
+                                onChanged: (val) => service.toggleCoupon(c.id, val),
+                                activeColor: IKASColors.primary,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      isThreeLine: true,
+                          isThreeLine: true,
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.05),
+                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8)),
+                          ),
+                          child: Row(
+                            children: [
+                              _reportItem(lang.isTurkish ? 'Kullanım' : 'Usage', '${c.usageCount}', Icons.people_outline, Colors.blue),
+                              const SizedBox(width: 24),
+                              _reportItem(lang.isTurkish ? 'Toplam Kazanç' : 'Total Profit', '₺${c.totalProfit.toStringAsFixed(2)}', Icons.monetization_on_outlined, Colors.green),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -2485,6 +2802,83 @@ class _CouponManagementTabState extends State<CouponManagementTab> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _reportItem(String label, String value, IconData icon, Color color) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 6),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
+            Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _showEditCouponDialog(BuildContext context, Coupon coupon) {
+    final lang = Provider.of<LanguageService>(context, listen: false);
+    final codeController = TextEditingController(text: coupon.code);
+    final amountController = TextEditingController(text: coupon.discountAmount.toString());
+    final percentageController = TextEditingController(text: (coupon.discountPercentage * 100).toString());
+    final descController = TextEditingController(text: coupon.description);
+    DateTime expiryDate = coupon.expiryDate;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(lang.isTurkish ? 'Kuponu Düzenle' : 'Edit Coupon'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: codeController, decoration: InputDecoration(labelText: lang.isTurkish ? 'Kupon Kodu' : 'Code')),
+                TextField(controller: amountController, decoration: InputDecoration(labelText: lang.isTurkish ? 'Tutar (₺)' : 'Amount (₺)'), keyboardType: TextInputType.number),
+                TextField(controller: percentageController, decoration: InputDecoration(labelText: lang.isTurkish ? 'Yüzde (%)' : 'Percentage (%)'), keyboardType: TextInputType.number),
+                TextField(controller: descController, decoration: InputDecoration(labelText: lang.isTurkish ? 'Açıklama' : 'Description')),
+                const SizedBox(height: 16),
+                ListTile(
+                  title: Text(lang.isTurkish ? 'Son Kullanım Tarihi' : 'Expiry Date'),
+                  subtitle: Text(expiryDate.toString().substring(0, 10)),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: expiryDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+                    );
+                    if (picked != null) setDialogState(() => expiryDate = picked);
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(lang.isTurkish ? 'İptal' : 'Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                final data = {
+                  'code': codeController.text.trim().toUpperCase(),
+                  'discountAmount': double.tryParse(amountController.text) ?? 0.0,
+                  'discountPercentage': (double.tryParse(percentageController.text) ?? 0.0) / 100,
+                  'description': descController.text.trim(),
+                  'expiryDate': Timestamp.fromDate(expiryDate),
+                };
+                await Provider.of<CouponService>(context, listen: false).updateCoupon(coupon.id, data);
+                if (context.mounted) Navigator.pop(context);
+              },
+              child: const Text('Save Changes'),
+            ),
+          ],
+        ),
       ),
     );
   }

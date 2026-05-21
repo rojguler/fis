@@ -255,13 +255,7 @@ class _HomeScreenState extends State<HomeScreen>
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  _iconBtn(Icons.refresh_rounded, () async {
-                    final ms = Provider.of<MenuService>(context, listen: false);
-                    await SeedService.seedIfEmpty();
-                    await ms.fetchAllMeals();
-                    await ms.fetchTodayMenu();
-                  }),
+
                   const SizedBox(width: 8),
                   Consumer<AuthService>(
                     builder: (_, auth, __) {

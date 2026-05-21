@@ -291,95 +291,39 @@ class MealDetailScreen extends StatelessWidget {
     final lang = Provider.of<LanguageService>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: isDark ? IKASColors.darkCard : Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-            border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade200),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    lang.price,
-                    style: GoogleFonts.poppins(fontSize: 14, color: isDark ? Colors.white60 : Colors.grey[600], fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '₺${meal.price.toStringAsFixed(2)}',
-                    style: GoogleFonts.poppins(fontSize: 36, fontWeight: FontWeight.w900, color: IKASColors.primary, letterSpacing: -1),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: meal.isAvailable ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: meal.isAvailable ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(meal.isAvailable ? Icons.check_circle_rounded : Icons.cancel_rounded, color: meal.isAvailable ? Colors.green : Colors.red, size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      meal.isAvailable 
-                          ? (lang.isTurkish ? 'Stokta (${meal.stock})' : 'In Stock (${meal.stock})')
-                          : lang.outOfStock,
-                      style: GoogleFonts.poppins(color: meal.isAvailable ? Colors.green.shade700 : Colors.red.shade700, fontWeight: FontWeight.w700, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (meal.isAvailable) ...[
-          const SizedBox(height: 16),
-          Consumer<OrderService>(
-            builder: (context, orderService, _) {
-              final prediction = orderService.stockPredictions[meal.id];
-              if (prediction == null) return const SizedBox.shrink();
-              final isTurkish = lang.isTurkish;
-              return Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.blue.withOpacity(0.15)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.auto_graph_rounded, size: 20, color: Colors.blue.shade700),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        StockPredictionService.getPredictionText(prediction, isTurkish),
-                        style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.blue.shade800),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: isDark ? IKASColors.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
-      ],
+        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade200),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                lang.price,
+                style: GoogleFonts.poppins(fontSize: 14, color: isDark ? Colors.white60 : Colors.grey[600], fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '₺${meal.price.toStringAsFixed(2)}',
+                style: GoogleFonts.poppins(fontSize: 36, fontWeight: FontWeight.w900, color: IKASColors.primary, letterSpacing: -1),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -663,7 +607,9 @@ class MealDetailScreen extends StatelessWidget {
                       HapticFeedback.lightImpact();
                       cartService.updateQuantity(meal.id, quantity + 1);
                     } else {
-                      ToastUtils.showTopToast(context, 'Maksimum stok: ${meal.stock}');
+                      ToastUtils.showTopToast(context, Provider.of<AuthService>(context, listen: false).isAdmin 
+                        ? 'Maksimum stok: ${meal.stock}'
+                        : (lang.isTurkish ? 'Maksimum stok miktarına ulaşıldı' : 'Maximum stock limit reached'));
                     }
                   },
                   icon: Icon(Icons.add_circle_rounded, color: IKASColors.primary),

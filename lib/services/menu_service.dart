@@ -351,6 +351,7 @@ class MenuService extends ChangeNotifier {
     required Map<String, double> nutrients,
     required List<String> allergens,
     String imageUrl = '',
+    String supplierEmail = '',
   }) async {
     try {
       final mealData = {
@@ -365,6 +366,7 @@ class MenuService extends ChangeNotifier {
         'nutrients': nutrients,
         'allergens': allergens,
         'imageUrl': imageUrl,
+        'supplierEmail': supplierEmail,
       };
 
       await _firestore.collection('meals').add(mealData);
@@ -389,6 +391,7 @@ class MenuService extends ChangeNotifier {
     required Map<String, double> nutrients,
     required List<String> allergens,
     String imageUrl = '',
+    String supplierEmail = '',
   }) async {
     try {
       final mealData = {
@@ -403,6 +406,7 @@ class MenuService extends ChangeNotifier {
         'nutrients': nutrients,
         'allergens': allergens,
         'imageUrl': imageUrl,
+        'supplierEmail': supplierEmail,
       };
 
       await _firestore.collection('meals').doc(mealId).update(mealData);

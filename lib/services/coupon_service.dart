@@ -9,6 +9,9 @@ class Coupon {
   final String description;
   final DateTime expiryDate;
   final bool isActive;
+  final int usageCount;
+  final double totalProfit;
+
 
   Coupon({
     required this.id,
@@ -18,7 +21,10 @@ class Coupon {
     required this.description,
     required this.expiryDate,
     required this.isActive,
+    this.usageCount = 0,
+    this.totalProfit = 0.0,
   });
+
 
   factory Coupon.fromFirestore(Map<String, dynamic> data, String id) {
     return Coupon(
@@ -29,7 +35,10 @@ class Coupon {
       description: data['description'] ?? '',
       expiryDate: (data['expiryDate'] as Timestamp?)?.toDate() ?? DateTime.now().add(const Duration(days: 30)),
       isActive: data['isActive'] ?? true,
+      usageCount: data['usageCount'] ?? 0,
+      totalProfit: (data['totalProfit'] ?? 0.0).toDouble(),
     );
+
   }
 
   Map<String, dynamic> toFirestore() {
@@ -40,7 +49,10 @@ class Coupon {
       'description': description,
       'expiryDate': Timestamp.fromDate(expiryDate),
       'isActive': isActive,
+      'usageCount': usageCount,
+      'totalProfit': totalProfit,
     };
+
   }
 
   bool get isValid => isActive && expiryDate.isAfter(DateTime.now());
@@ -76,6 +88,28 @@ class CouponService extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error creating coupon: $e');
       rethrow;
+    }
+  }
+
+  // Admin updates a coupon
+  Future<void> updateCoupon(String id, Map<String, dynamic> data) async {
+    try {
+      await _firestore.collection('coupons').doc(id).update(data);
+    } catch (e) {
+      debugPrint('Error updating coupon: $e');
+      rethrow;
+    }
+  }
+
+  // Increment usage count and profit
+  Future<void> incrementUsage(String id, double profit) async {
+    try {
+      await _firestore.collection('coupons').doc(id).update({
+        'usageCount': FieldValue.increment(1),
+        'totalProfit': FieldValue.increment(profit),
+      });
+    } catch (e) {
+      debugPrint('Error incrementing usage: $e');
     }
   }
 
@@ -134,12 +168,27 @@ class CouponService extends ChangeNotifier {
     }
   }
 
-  // Seed initial clean coupons
+  // Seed 2 clean working coupons
   Future<void> seedInitialCoupons() async {
     final initialCoupons = [
-      Coupon(id: '', code: 'FIS10', discountAmount: 0, discountPercentage: 10, description: '%10 Discount', expiryDate: DateTime.now().add(const Duration(days: 365)), isActive: true),
-      Coupon(id: '', code: 'SAVE20', discountAmount: 20, discountPercentage: 0, description: '20 TL Discount', expiryDate: DateTime.now().add(const Duration(days: 365)), isActive: true),
-      Coupon(id: '', code: 'FIS50', discountAmount: 0, discountPercentage: 50, description: '%50 Super Discount', expiryDate: DateTime.now().add(const Duration(days: 365)), isActive: true),
+      Coupon(
+        id: '',
+        code: 'FIS10',
+        discountAmount: 0,
+        discountPercentage: 0.10, // %10 indirim
+        description: '%10 İndirim - Tüm Ürünler',
+        expiryDate: DateTime.now().add(const Duration(days: 365)),
+        isActive: true,
+      ),
+      Coupon(
+        id: '',
+        code: 'WELCOME25',
+        discountAmount: 25.0, // 25 TL indirim
+        discountPercentage: 0,
+        description: '25 TL İndirim - Hoşgeldin Kuponu',
+        expiryDate: DateTime.now().add(const Duration(days: 365)),
+        isActive: true,
+      ),
     ];
 
     for (var c in initialCoupons) {

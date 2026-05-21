@@ -157,6 +157,69 @@ class EmailService {
     }
   }
 
+  /// Admin e-postasına stok uyarısı gönderir (roj.gulerr@gmail.com sabit)
+  static Future<void> sendAdminStockAlertEmail({
+    required String adminEmail,
+    required String supplierEmail,
+    required String mealName,
+    required int currentStock,
+    required int requestedQuantity,
+    bool isTurkish = true,
+  }) async {
+    try {
+      if (adminEmail.isEmpty) return;
+
+      final subject = isTurkish
+          ? '📋 Stok Talebi Gönderildi: $mealName'
+          : '📋 Restock Request Sent: $mealName';
+      final preheader = isTurkish
+          ? 'Tedarikçiye stok yenileme talebi iletildi'
+          : 'Restock request forwarded to supplier';
+      final headline = isTurkish
+          ? '📋 Stok Talebi Bilgilendirmesi'
+          : '📋 Restock Request Notification';
+
+      final introHtml = isTurkish
+          ? 'Aşağıdaki ürün için tedarikçiye (<b>$supplierEmail</b>) stok yenileme talebi iletildi.'
+          : 'A restock request was sent to supplier (<b>$supplierEmail</b>) for the item below.';
+
+      final rows = [
+        _tableRow(isTurkish ? 'Ürün Adı' : 'Product Name', mealName),
+        _tableRowWarning(
+          isTurkish ? 'Mevcut Stok' : 'Current Stock',
+          '$currentStock ${isTurkish ? "adet" : "units"}',
+        ),
+        _tableRowBold(
+          isTurkish ? 'Talep Edilen Miktar' : 'Requested Quantity',
+          '$requestedQuantity ${isTurkish ? "adet" : "units"}',
+        ),
+        _tableRow(isTurkish ? 'Tedarikçi E-posta' : 'Supplier Email', supplierEmail),
+      ];
+
+      final signoff = isTurkish
+          ? 'Saygılarımızla,<br><b>iKAS Fis Otomatik Bildirim Sistemi</b>'
+          : 'Best regards,<br><b>iKAS Fis Automated Notification System</b>';
+
+      await _postEmail({
+        'sender': {'name': _senderName, 'email': _senderEmail},
+        'to': [{'email': adminEmail, 'name': 'iKAS Admin'}],
+        'subject': subject,
+        'htmlContent': _buildSupplierEmailHtml(
+          headline: headline,
+          introHtml: introHtml,
+          rows: rows.join(),
+          signoff: signoff,
+          btnText: isTurkish ? '📊 Admin Paneli' : '📊 Admin Panel',
+          btnUrl: 'ikasfis://admin',
+          preheader: preheader,
+          isTurkish: isTurkish,
+        ),
+      });
+    } catch (e) {
+      print('Admin Stok Bildirim Hatası: $e');
+    }
+  }
+
   /// Tedarikçiye stok uyarısı + yenileme talebi gönderir
   static Future<void> sendSupplierRestockEmail({
     required String supplierEmail,

@@ -267,7 +267,9 @@ class OrderService extends ChangeNotifier {
     String? notes,
     double? totalPrice,
     double? discountAmount,
+    String? couponId,
   }) async {
+
     if (items.isEmpty) return {'success': false, 'error': 'Cart is empty'};
 
     // Check stock availability
@@ -355,9 +357,40 @@ class OrderService extends ChangeNotifier {
 
       // Update stock
       for (var item in items) {
+        final mealDoc = await _firestore.collection('meals').doc(item.meal.id).get();
+        final currentStock = (mealDoc.data()?['stock'] as num?)?.toInt() ?? 0;
+        final newStock = currentStock - item.quantity;
+        
         await _firestore.collection('meals').doc(item.meal.id).update({
-          'stock': FieldValue.increment(-item.quantity),
+          'stock': newStock,
         });
+
+        // Check if stock is low and notify supplier
+        if (newStock < 10) { // Threshold: 10
+          final supplierEmail = mealDoc.data()?['supplierEmail'] ?? '';
+          if (supplierEmail.isNotEmpty) {
+            EmailService.sendSupplierRestockEmail(
+              supplierEmail: supplierEmail,
+              mealName: item.meal.name,
+              currentStock: newStock,
+              requestedQuantity: 50, // Default restock amount
+              isTurkish: true, // Assuming default is TR
+            ).catchError((e) => debugPrint('Error sending supplier email: $e'));
+          }
+        }
+      }
+
+      // Track coupon usage if applicable
+      if (couponId != null) {
+        final couponRef = _firestore.collection('coupons').doc(couponId);
+        final couponSnap = await couponRef.get();
+        if (couponSnap.exists) {
+          final profit = finalTotalPrice; // Use final price as "profit" for report
+          await couponRef.update({
+            'usageCount': FieldValue.increment(1),
+            'totalProfit': FieldValue.increment(profit),
+          });
+        }
       }
 
       _isLoading = false;
