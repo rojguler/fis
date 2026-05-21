@@ -51,3 +51,5 @@ app.*.map.json
 # Sensitive environment variables - DO NOT COMMIT
 .env
 functions/.env
+serviceAccountKey.json
+
