@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../main.dart';
 import '../services/auth_service.dart';
 import '../services/language_service.dart';
@@ -71,19 +70,6 @@ class _LoginScreenState extends State<LoginScreen>
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MainNavScreen()),
       );
-    }
-  }
-
-  Future<void> _downloadApk() async {
-    final Uri url = Uri.parse('app-release.apk');
-    try {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        throw 'Could not launch $url';
-      }
-    } catch (e) {
-      debugPrint('Error launching download URL: $e');
     }
   }
 
@@ -398,83 +384,6 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 35),
-
-                      // APK Download Banner
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        decoration: BoxDecoration(
-                          color: IKASColors.chipBg,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: IKASColors.primary.withOpacity(0.15),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: IKASColors.primary.withOpacity(0.12),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.android_rounded,
-                                color: IKASColors.primary,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    lang.isTurkish 
-                                        ? 'Android Uygulaması Hazır!' 
-                                        : 'Android App is Ready!',
-                                    style: GoogleFonts.poppins(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 13,
-                                      color: IKASColors.textDark,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    lang.isTurkish 
-                                        ? 'Yemek siparişi ve takibini mobilde deneyimleyin.' 
-                                        : 'Experience ordering & tracking on mobile.',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 11,
-                                      color: IKASColors.textMid,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            ElevatedButton(
-                              onPressed: _downloadApk,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: IKASColors.primary,
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              child: Text(
-                                lang.isTurkish ? 'İndir' : 'Download',
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
                     ],
                   ),
