@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../main.dart';
 import '../services/cart_service.dart';
 import '../services/language_service.dart';
+import '../widgets/chatbot_widget.dart';
 import 'home_screen.dart';
 import 'menu_screen.dart';
 import 'cart_screen.dart';
@@ -76,19 +77,24 @@ class _MainNavScreenState extends State<MainNavScreen>
           }
         }
       },
-      child: Scaffold(
-        body: IndexedStack(
-          index: _currentIndex,
-          children: _pages,
-        ),
-        // Cart FAB stays above the bottom nav
-        floatingActionButton: _CartFab(onTap: () {
-          _navigatorKeys[_currentIndex].currentState?.push(
-            MaterialPageRoute(builder: (_) => const CartScreen()),
-          );
-        }),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        bottomNavigationBar: _buildBottomNav(lang, isDark),
+      child: Stack(
+        children: [
+          Scaffold(
+            body: IndexedStack(
+              index: _currentIndex,
+              children: _pages,
+            ),
+            // Cart FAB stays above the bottom nav
+            floatingActionButton: _CartFab(onTap: () {
+              _navigatorKeys[_currentIndex].currentState?.push(
+                MaterialPageRoute(builder: (_) => const CartScreen()),
+              );
+            }),
+            floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+            bottomNavigationBar: _buildBottomNav(lang, isDark),
+          ),
+          const ChatbotWidget(),
+        ],
       ),
     );
   }

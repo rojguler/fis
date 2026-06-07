@@ -128,14 +128,20 @@ class _HomeScreenState extends State<HomeScreen>
                         builder: (context, menuService, _) {
                           // Günlük menü varsa sadece onu göster; yoksa tüm menü
                           final hasDailyMenu = menuService.todayMeals.isNotEmpty;
-                          final sourceList = hasDailyMenu ? menuService.todayMeals : menuService.meals;
+                          final sourceList = List<dynamic>.from(menuService.meals);
+                          if (hasDailyMenu) {
+                            final todayIds = menuService.todayMeals.map((m) => m.id).toSet();
+                            sourceList.sort((a, b) {
+                              final aIsToday = todayIds.contains(a.id) ? 1 : 0;
+                              final bIsToday = todayIds.contains(b.id) ? 1 : 0;
+                              return bIsToday.compareTo(aIsToday);
+                            });
+                          }
                           final filteredMeals = _filterMeals(sourceList);
 
                           return SliverList(
                             delegate: SliverChildListDelegate([
                               _buildActiveOrderTrackerWidget(context),
-                              if (hasDailyMenu && _searchQuery.isEmpty && _selectedCategory == 'all')
-                                _buildDailyMenuBanner(context),
                               if (_searchQuery.isEmpty && _selectedCategory == 'all' && !hasDailyMenu && sourceList.isNotEmpty)
                                 _buildTrendingNow(sourceList),
                               if (hasDailyMenu && _searchQuery.isEmpty && _selectedCategory == 'all')
@@ -196,15 +202,6 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
             ],
-          ),
-          Consumer<CartService>(
-            builder: (context, cart, _) {
-              if (cart.itemCount == 0) return const SizedBox.shrink();
-              return Positioned(
-                bottom: 24, left: 16, right: 16,
-                child: _buildFloatingCart(context, cart),
-              );
-            },
           ),
         ],
       ),

@@ -21,6 +21,7 @@ import 'services/language_service.dart';
 import 'services/seed_service.dart';
 import 'services/notification_service.dart';
 import 'services/coupon_service.dart';
+import 'services/chatbot_service.dart';
 
 // ─── IKAS Brand Colors ───────────────────────────────────────────────────────
 class IKASColors {
@@ -194,6 +195,7 @@ class MyApp extends StatelessWidget {
           update: (_, menuService, previous) => previous ?? OrderService(menuService),
         ),
         ChangeNotifierProvider(create: (_) => CouponService()),
+        ChangeNotifierProvider(create: (_) => ChatbotService()),
       ],
       child: Consumer2<ThemeService, LanguageService>(
         builder: (context, themeService, langService, _) {

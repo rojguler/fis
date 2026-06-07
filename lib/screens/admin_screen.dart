@@ -697,39 +697,32 @@ class _MenuManagementTabState extends State<MenuManagementTab> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: caloriesController,
-                                keyboardType: TextInputType.number,
-                                decoration: _inputDecoration(context, 'Calories *', Icons.local_fire_department_outlined),
-                                onTap: () => caloriesController.selection = TextSelection(baseOffset: 0, extentOffset: caloriesController.text.length),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                value: selectedCategory,
-                                decoration: _inputDecoration(context, 'Category *', Icons.category_outlined),
-                                items: const [
-                                  DropdownMenuItem(value: 'main', child: Text('Main Course')),
-                                  DropdownMenuItem(value: 'soup', child: Text('Soup')),
-                                  DropdownMenuItem(value: 'salad', child: Text('Salad')),
-                                  DropdownMenuItem(value: 'dessert', child: Text('Dessert')),
-                                  DropdownMenuItem(value: 'drink', child: Text('Beverage')),
-                                  DropdownMenuItem(value: 'diet', child: Text('Diet / Diyetik')),
-                                  DropdownMenuItem(value: 'vegetarian', child: Text('Vegetarian')),
-                                  DropdownMenuItem(value: 'vegan', child: Text('Vegan')),
-                                  DropdownMenuItem(value: 'breakfast', child: Text('Breakfast')),
-                                  DropdownMenuItem(value: 'fastfood', child: Text('Fast Food')),
-                                  DropdownMenuItem(value: 'side', child: Text('Side Dish')),
-                                  DropdownMenuItem(value: 'snack', child: Text('Snack')),
-                                ],
-                                onChanged: (value) => setDialogState(() => selectedCategory = value!),
-                              ),
-                            ),
+                        TextField(
+                          controller: caloriesController,
+                          keyboardType: TextInputType.number,
+                          decoration: _inputDecoration(context, 'Calories *', Icons.local_fire_department_outlined),
+                          onTap: () => caloriesController.selection = TextSelection(baseOffset: 0, extentOffset: caloriesController.text.length),
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<String>(
+                          value: selectedCategory,
+                          isExpanded: true,
+                          decoration: _inputDecoration(context, 'Category *', Icons.category_outlined),
+                          items: const [
+                            DropdownMenuItem(value: 'main', child: Text('Main Course', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'soup', child: Text('Soup', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'salad', child: Text('Salad', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'dessert', child: Text('Dessert', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'drink', child: Text('Beverage', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'diet', child: Text('Diet / Diyetik', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'vegetarian', child: Text('Vegetarian', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'vegan', child: Text('Vegan', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'breakfast', child: Text('Breakfast', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'fastfood', child: Text('Fast Food', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'side', child: Text('Side Dish', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'snack', child: Text('Snack', overflow: TextOverflow.ellipsis)),
                           ],
+                          onChanged: (value) => setDialogState(() => selectedCategory = value!),
                         ),
                         
                         const SizedBox(height: 32),
@@ -2131,7 +2124,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
     final lang = Provider.of<LanguageService>(context, listen: false);
     final isTurkish = lang.isTurkish;
     // Admin e-posta sabit olarak kayıtlı
-    const adminEmail = 'roj.gulerr@gmail.com';
+    const adminEmail = 'ikasfoodnotification@gmail.com';
     // Tedarikçi e-postası otomatik doldurulur
     final emailController = TextEditingController(text: meal.supplierEmail ?? '');
     final quantityController = TextEditingController(text: '50');
@@ -2391,7 +2384,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
 
   /// Stok uyarısı: tek tıkla onay + otomatik tedarikçi maili
   void _showQuickSupplierConfirm(BuildContext context, meal) {
-    const adminEmail = 'roj.gulerr@gmail.com';
+    const adminEmail = 'ikasfoodnotification@gmail.com';
     final lang = Provider.of<LanguageService>(context, listen: false);
     final isTurkish = lang.isTurkish;
     final hasEmail = meal.supplierEmail != null && (meal.supplierEmail as String).isNotEmpty;

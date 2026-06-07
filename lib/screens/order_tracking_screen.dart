@@ -782,7 +782,9 @@ class _PickupCodeSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pickupCode = orderId.substring(orderId.length - 4).toUpperCase();
+    final pickupCode = orderId.length >= 4 
+        ? orderId.substring(orderId.length - 4).toUpperCase()
+        : orderId.toUpperCase();
     
     return Container(
       padding: const EdgeInsets.all(24),

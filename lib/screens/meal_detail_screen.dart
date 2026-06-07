@@ -148,21 +148,26 @@ class MealDetailScreen extends StatelessWidget {
                                   const SizedBox(height: 12),
                                   Row(
                                     children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                        decoration: BoxDecoration(
-                                          color: Colors.orange.withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            const Icon(Icons.star_rounded, color: Colors.orange, size: 18),
-                                            const SizedBox(width: 4),
-                                            Text('4.8', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 13, color: Colors.orange.shade800)),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
+                                      Consumer<ReviewService>(
+                                        builder: (context, reviewService, _) {
+                                          final avg = reviewService.getAverageRating(meal.id);
+                                          final displayRating = avg > 0 ? avg.toStringAsFixed(1) : '—';
+                                          return Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                            decoration: BoxDecoration(
+                                              color: Colors.orange.withOpacity(0.15),
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.star_rounded, color: Colors.orange, size: 18),
+                                                const SizedBox(width: 4),
+                                                Text(displayRating, style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 13, color: Colors.orange.shade800)),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),const SizedBox(width: 12),
                                       Consumer<ReviewService>(
                                         builder: (context, reviewService, _) {
                                           final reviews = reviewService.getReviewsForMeal(meal.id);

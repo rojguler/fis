@@ -992,7 +992,7 @@ class ProfileScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             _helpRow(Icons.email_outlined, lang.isTurkish ? 'E-posta' : 'Email',
-                'roj.gulerr@gmail.com', Colors.blue, isDark),
+                'ikasfoodnotification@gmail.com', Colors.blue, isDark),
             const SizedBox(height: 12),
             _helpRow(Icons.schedule_rounded, lang.isTurkish ? 'Çalışma Saatleri' : 'Working Hours',
                 lang.isTurkish ? 'Pzt-Paz: 09:00 - 23:00' : 'Mon-Sun: 09:00 - 23:00',

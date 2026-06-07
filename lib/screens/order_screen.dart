@@ -169,6 +169,7 @@ class _OrderScreenState extends State<OrderScreen> {
   // Cleaned unused method
 
   Widget _buildNotesSection(LanguageService lang) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -183,18 +184,35 @@ class _OrderScreenState extends State<OrderScreen> {
         TextField(
           controller: _notesController,
           maxLines: 3,
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black87,
+          ),
           decoration: InputDecoration(
             hintText: lang.notesHint,
+            hintStyle: TextStyle(
+              color: isDark ? Colors.white54 : Colors.grey[500],
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: isDark ? Colors.white24 : Colors.grey.shade300,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: IKASColors.primary, width: 2),
+            ),
             filled: true,
-            fillColor: Colors.grey[50],
+            fillColor: isDark ? const Color(0xFF2A2A2A) : Colors.grey[50],
           ),
         ),
       ],
     );
   }
+
 
   Widget _buildOrderItemsList(BuildContext context, CartService cartService, LanguageService lang) {
     return Column(
@@ -491,8 +509,15 @@ class _OrderScreenState extends State<OrderScreen> {
       discountAmount: cartService.discountAmount,
     );
 
-    // If order was created successfully and we had a coupon applied, maybe mark it as used?
-    // We'll skip coupon invalidation for now as usually coupons can be reused or they are tracked per user.
+
+    // If order was created successfully and a coupon was applied, track its usage
+    if (result['success'] == true && cartService.appliedCoupon != null) {
+      final couponService = Provider.of<CouponService>(context, listen: false);
+      await couponService.incrementUsage(
+        cartService.appliedCoupon!.id,
+        cartService.finalPrice,
+      );
+    }
 
     final error = result['success'] ? null : result['error'] as String?;
     final order = result['success'] ? result['order'] as models.Order : null;
